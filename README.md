@@ -76,4 +76,4 @@ cd build/target/pressure-engine/pressure-engine/bin
 ```
 ## 插件开发
 插件需要实现PressurePlugin和EnginePressureModeAbility接口。
-![image](/images/struct.png)
+![image](https://github.com/shulieTech/Takin-pressure-engine/blob/main/images/struct.png)
