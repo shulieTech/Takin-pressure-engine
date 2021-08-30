@@ -73,8 +73,9 @@ cd build/target/pressure-engine/pressure-engine/bin
 
     2. 在用户目录下 develop/buildImages/pressure-engine文件夹下
         可以获得pressure-engine.tar.gz引擎包
-```
+
 ## 插件开发
+```
 插件需要实现PressurePlugin和EnginePressureModeAbility接口。
 ```
 API架构设计图如下：
