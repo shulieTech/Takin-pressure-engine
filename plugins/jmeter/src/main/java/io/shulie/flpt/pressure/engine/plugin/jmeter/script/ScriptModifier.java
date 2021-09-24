@@ -34,7 +34,9 @@ import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.JmeterConstants;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.XpathUtils;
 import io.shulie.flpt.pressure.engine.util.JsonUtils;
+import io.shulie.flpt.pressure.engine.util.NumberUtils;
 import io.shulie.flpt.pressure.engine.util.StringUtils;
+import io.shulie.flpt.pressure.engine.util.SystemResourceUtil;
 import io.shulie.flpt.pressure.engine.util.TryUtils;
 import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
 import io.shulie.jmeter.tool.redis.RedisConfig;
@@ -99,6 +101,8 @@ public class ScriptModifier {
         List<String> jarFilePathList = context.getJarFilePathList();
         // 第一层
         List<Element> hashTreeElements = root.elements("hashTree");
+
+        forbidResultCollector(hashTreeElements);
 
         for (Element hashTreeElement : hashTreeElements) {
             // *********************************TestPlan********************************
@@ -178,13 +182,20 @@ public class ScriptModifier {
 
         // add by lipeng 如果是TPS模式 存在多个业务活动，需要添加吞吐量控制器
         if (EnginePressureMode.TPS == currentEnginePressureMode) {
-            //将目标值写入redis  目前使用redis实现动态tps调整功能
-            writeTpsTargetToRedis(context.getEnginePressureParams(), context.getSceneId(), context.getReportId()
-                    , context.getCustomerId());
-            //处理业务活动
             List<BusinessActivity> businessActivities = context.getBusinessActivities();
             //只有是业务流程 也就是业务活动大于1个的时候才需要添加吞吐量控制器
-            if (businessActivities != null && businessActivities.size() > 1) {
+            if (null == businessActivities || businessActivities.size()<=0) {
+                return;
+            }
+            int tpsThreadMode = NumberUtils.parseInt(context.getEnginePressureParams().get("tpsThreadMode"));
+            if (0 == tpsThreadMode) {
+                //总的目标tps
+                double tpsTargetLevel = NumberUtils.parseDouble(context.getEnginePressureParams().get("tpsTargetLevel"));
+                //目标增大因子（保证tps在目标之上）,默认0.1即增大10%
+                double tpsTargetLevelFactor = NumberUtils.parseDouble(context.getEnginePressureParams().get("tpsTargetLevelFactor"), 0.1d);
+                //添加常量吞吐量控制器
+                addConstantsThroughputControl(root, tpsTargetLevel, businessActivities, tpsTargetLevelFactor);
+            } else {
                 addThroughputControl(root, businessActivities);
             }
         }
@@ -194,6 +205,126 @@ public class ScriptModifier {
         if (EnginePressureMode.FLOW_DEBUG == currentEnginePressureMode){
             updateJmxHttpPressTestTags(document);
             updateXmlDubboPressTestTags(document);
+        }
+    }
+
+
+    /**
+     * 给请求添加常量吞吐量控制器
+     *
+     * @param root               rootElement
+     * @param businessActivities 所有业务活动信息
+     * @author yuanba
+     */
+    public static void addConstantsThroughputControl(Element root, double tpsTargetLevel,  List<BusinessActivity> businessActivities, double tpsTargetLevelFactor) {
+        // elementTestName对应的百分比
+        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
+            .collect(Collectors.toMap(BusinessActivity::getElementTestName,BusinessActivity::getThroughputPercent));
+
+        // 需要的所有属性值
+        List<String> testNameValues = businessActivities
+            .stream().map(BusinessActivity::getElementTestName).collect(Collectors.toList());
+
+        // 根据需要的testname属性的属性值 获取所有满足element
+        List<Element> sampleElements = getAllElementByAttribute(root, "testname", testNameValues);
+        // 找到数据才做处理
+        if (sampleElements != null && sampleElements.size() > 0) {
+            for (Element sampleElement : sampleElements) {
+                String testNameValue = sampleElement.attributeValue("testname");
+                //当前业务活动tps占比
+                double throughputPercent = NumberUtils.parseDouble(businessActivityMap.get(testNameValue))/100d;
+                //求1分钟的并发数,1.1是原来的目标的基础上加10%
+                double throughput = tpsTargetLevel * 60 * throughputPercent;
+                //如果上浮因子大于5，则表示固定上浮这个数，小于等于5表示上浮百分比
+                throughput += tpsTargetLevelFactor > 5 ? tpsTargetLevelFactor : throughput * tpsTargetLevelFactor;
+                //给每一个采样器添加常量吞吐量控制器
+                addEachConstantsThroughputControl(sampleElement, testNameValue, throughput, throughputPercent, tpsTargetLevelFactor);
+            }
+        } else {
+            logger.warn("根据testname未找到对应的采样器元素。");
+        }
+    }
+
+    /**
+     * 给每一个sampleElement添加常量吞吐量控制器
+     *
+     * 逻辑：
+     * 1. 校验采样器是否存在
+     * 2. 根据采样器获取其父节点，也就是采样器所在的hashTree
+     * 3. 获取采样器的子节点信息的hashTree
+     * 4. 在采样器父节点下面创建吞吐量控制器
+     * 5. 在采样器父节点下面再创建吞吐量控制器的hashTree
+     * 6. 在吞吐量控制器的hashTree下添加采样器和采样器的hashTree的克隆副本
+     * 7. 将原先在采样器父节点下的采样器和采样器的hashTree移除
+     *
+     * @param sampleElement  sampleElement是传来的采样器，一般是HTTPSamplerProxy 或者 dubbo kafka之类的。
+     * @param sampleTestname 取样器testname
+     * @param throughput     每分钟常量吞吐量
+     */
+    public static void addEachConstantsThroughputControl(Element sampleElement, String sampleTestname, Double throughput, Double throughputPercent, Double tpsFactor) {
+        // 1. 校验采样器是否存在
+        if (sampleElement == null) {
+            logger.error("sampleElement is null");
+            return;
+        }
+        // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
+        Element sampleParent = sampleElement.getParent();
+
+        // 3. 获取采样器的子节点信息的hashTree
+        boolean isSampleElementHashTree = false;
+        Element sampleElementHashTree = null;
+        for (Object obj : sampleParent.elements()) {
+            Element ele = (Element)obj;
+            if (ele == null) {
+                continue;
+            }
+            if (isSampleElementHashTree) {
+                sampleElementHashTree = ele;
+                break;
+            }
+            //如果元素是我们传来的元素 那么下一个遍历的将会是他的hashTree
+            if (Objects.equals(ele.attributeValue("testname"), sampleTestname)) {
+                isSampleElementHashTree = true;
+            }
+        }
+        if (sampleElementHashTree == null) {
+            logger.warn("脚本文件有误，请排查");
+            // 4. 在采样器父节点下面创建hashTree
+            sampleElementHashTree = sampleParent.addElement("hashTree");
+        }
+
+        // 5. 在采样器父节点下面创建常量吞吐量控制器
+        Element constantThroughputTimer = sampleElementHashTree.addElement("ConstantThroughputTimer");
+        constantThroughputTimer.addAttribute("guiclass", "TestBeanGUI");
+        constantThroughputTimer.addAttribute("testclass", "ConstantThroughputTimer");
+        constantThroughputTimer.addAttribute("testname", getSampleThroughputControllerTestname(sampleTestname));
+        constantThroughputTimer.addAttribute("enabled", "true");
+
+        addPropElement(constantThroughputTimer, "calcMode", 3);
+        addPropElement(constantThroughputTimer, "throughput", throughput);
+        if (null != throughputPercent) {
+            addPropElement(constantThroughputTimer, "percent", throughputPercent);
+        }
+        if (null != tpsFactor) {
+            addPropElement(constantThroughputTimer, "tpsFactor", tpsFactor);
+        }
+    }
+
+    /**
+     * 添加prop元素
+     */
+    public static void addPropElement(Element container, String name, Object value) {
+        if (null == value) {
+            return;
+        }
+        if (value instanceof Double || value instanceof Float) {
+            Element node = container.addElement("doubleProp");
+            node.addElement("name").setText(name);
+            node.addElement("value").setText(StringUtils.valueOf(value));
+        } else if (value instanceof Integer || value instanceof Long) {
+            container.addElement("intProp").addAttribute("name", name).setText(StringUtils.valueOf(value));
+        } else if (value instanceof String) {
+            container.addElement("stringProp").addAttribute("name", name).setText(StringUtils.valueOf(value));
         }
     }
 
@@ -898,9 +1029,9 @@ public class ScriptModifier {
      */
     private static void rebuildCommonThreadGroupSubElements(Element threadGroupElement
         , PressureTestMode pressureTestMode
-        , Long rampUp
-        , Long steps
-        , Long holdTime) {
+        , String rampUp
+        , String steps
+        , String holdTime) {
         threadGroupElement.addElement("elementProp")
             .addAttribute("name", "ThreadGroup.main_controller")
             .addAttribute("elementType", "com.blazemeter.jmeter.control.VirtualUserController");
@@ -962,8 +1093,8 @@ public class ScriptModifier {
                         hashTreeSubElement.clearContent();
                         //重填内容
                         rebuildCommonThreadGroupSubElements(hashTreeSubElement
-                                , pressureTestMode, concurrencyAbility.getRampUp()
-                                , concurrencyAbility.getSteps(), concurrencyAbility.getHoldTime());
+                                , pressureTestMode, StringUtils.valueOf(concurrencyAbility.getRampUp())
+                                , StringUtils.valueOf(concurrencyAbility.getSteps()), StringUtils.valueOf(concurrencyAbility.getHoldTime()));
                         //添加目标值
                         hashTreeSubElement.addElement("stringProp")
                                 .addAttribute("name", "TargetLevel")
@@ -980,28 +1111,66 @@ public class ScriptModifier {
                             .getPressureModeAbility(EnginePressureMode.TPS);
                     //具备tps模式能力
                     if(tpsAbility != null) {
-                        hashTreeSubElement.setName(tpsAbility.getAbilityName());
-                        Map<String, String> elementAttributes = tpsAbility.getExtraAttributes();
-                        if(elementAttributes != null) {
-                            for(Map.Entry<String, String> entry : elementAttributes.entrySet()) {
-                                hashTreeSubElement.addAttribute(entry.getKey()
-                                        , entry.getValue());
+                        String steps = StringUtils.valueOf(tpsAbility.getSteps());
+                        String rampUp = StringUtils.valueOf(tpsAbility.getRampUp());
+                        int tpsThreadMode = NumberUtils.parseInt(
+                            context.getEnginePressureParams().get("tpsThreadMode"));
+                        if (0 == tpsThreadMode) {
+                            hashTreeSubElement.setName(Constants.CONCURRENCY_THREAD_GROUP_NAME);
+                            hashTreeSubElement.addAttribute("guiclass",
+                                "com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroupGui");
+                            hashTreeSubElement.addAttribute("testclass",
+                                "com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup");
+                            hashTreeSubElement.addAttribute("testname", "shulie - ConcurrencyThreadGroup");
+                            hashTreeSubElement.addAttribute("enabled", "true");
+                            //将其下方内容清空
+                            hashTreeSubElement.clearContent();
+                            //采用阶梯递增模式，起始并发为tps数，每2秒递增1次
+                            int maxThreadNum = NumberUtils.parseInt(
+                                context.getEnginePressureParams().get("maxThreadNum"));
+                            if (maxThreadNum <= 0) {
+                                maxThreadNum = SystemResourceUtil.getMaxThreadNum();
                             }
-                        }
-                        //将其下方内容清空
-                        hashTreeSubElement.clearContent();
-                        //重填内容
-                        rebuildCommonThreadGroupSubElements(hashTreeSubElement
-                                , pressureTestMode, tpsAbility.getRampUp(), tpsAbility.getSteps(), tpsAbility.getHoldTime());
-                        //添加限制并发数 这里不需要限制
-                        hashTreeSubElement.addElement("stringProp")
+                            double tpsTargetLevel = NumberUtils.parseDouble(
+                                context.getEnginePressureParams().get("tpsTargetLevel"));
+                            if (tpsTargetLevel > 0) {
+                                pressureTestMode = PressureTestMode.STAIR;
+                                int stepsNum = (int)Math.ceil(maxThreadNum / tpsTargetLevel);
+                                steps = StringUtils.valueOf(stepsNum);
+                                rampUp = StringUtils.valueOf((int)Math.floor(stepsNum * 1.2));
+                            }
+
+                            //重填内容
+                            rebuildCommonThreadGroupSubElements(hashTreeSubElement, pressureTestMode, rampUp, steps,
+                                StringUtils.valueOf(tpsAbility.getHoldTime()));
+                            hashTreeSubElement.addElement("stringProp")
+                                .addAttribute("name", "TargetLevel")
+                                //这里的值只是在脚本里显示，真实值会从redis取
+                                .setText(StringUtils.valueOf(maxThreadNum));
+                        } else {
+                            hashTreeSubElement.setName(tpsAbility.getAbilityName());
+                            Map<String, String> elementAttributes = tpsAbility.getExtraAttributes();
+                            if (elementAttributes != null) {
+                                for (Map.Entry<String, String> entry : elementAttributes.entrySet()) {
+                                    hashTreeSubElement.addAttribute(entry.getKey()
+                                        , entry.getValue());
+                                }
+                            }
+                            //将其下方内容清空
+                            hashTreeSubElement.clearContent();
+                            //重填内容
+                            rebuildCommonThreadGroupSubElements(hashTreeSubElement
+                                , pressureTestMode, rampUp, steps, StringUtils.valueOf((tpsAbility.getHoldTime())));
+                            //添加限制并发数 这里不需要限制
+                            hashTreeSubElement.addElement("stringProp")
                                 .addAttribute("name", "ConcurrencyLimit")
                                 .setText(Constants.TPS_MODE_CONCURRENCY_LIMIT); //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
-                        //添加目标值
-                        hashTreeSubElement.addElement("stringProp")
+                            //添加目标值
+                            hashTreeSubElement.addElement("stringProp")
                                 .addAttribute("name", "TargetLevel")
                                 //这里的值只是在脚本里显示，真实值会从redis取
                                 .setText(tpsAbility.getTargetTps());
+                        }
                     } else{
                         HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "压力引擎不具备TPS模式能力");
                         logger.error("unable to tps mode, please implement EnginePressureModeAble#enableTPSMode");
@@ -1664,6 +1833,28 @@ public class ScriptModifier {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
                     "TPS模式下，Redis 连接失败，" + e.getMessage());
             System.exit(-1);
+        }
+    }
+
+    /**
+     * 禁用脚本自带ResultCollector
+     *
+     * @param elements
+     */
+    private static void forbidResultCollector(List<Element> elements) {
+        if (null != elements && elements.size() > 0) {
+            for (Element element : elements) {
+                List<Element> resultCollector = element.elements("ResultCollector");
+                if (null != resultCollector && !resultCollector.isEmpty()) {
+                    resultCollector.forEach(item -> {
+                        item.addAttribute("enabled", "false");
+                    });
+                }
+                List<Element> nextLevel = element.elements("hashTree");
+                if (nextLevel != null && nextLevel.size() > 0) {
+                    forbidResultCollector(nextLevel);
+                }
+            }
         }
     }
 }

@@ -107,7 +107,7 @@ rm -rf $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib/*
 log ' >>> 打包pressure-engine.. <<< '
 sleep 2
 cd $PRESSURE_ENGINE_SOURCE_PATH
-mvn clean package -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
+mvn clean package -Dmaven.test.skip=true -X --settings $MAVEN_SETTINGS_PATH
 
 #将打包后的pressure-engine拷贝到打docker镜像处
 log ' >>> 构建docker镜像.. <<< '

@@ -17,6 +17,8 @@ package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+
+import com.google.gson.internal.LinkedTreeMap;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
@@ -391,9 +393,18 @@ public class JmeterPlugin implements PressurePlugin {
                 if (obj != null) {
                     Map<Integer, Object> pairMap = (Map<Integer, Object>)obj;
                     Object o = pairMap.get(String.valueOf(podIndex - 1));
-                    ArrayList<Map<String, String>> positionList = (ArrayList<Map<String, String>>)o;
-                    Map<String, String> positionMap = positionList.get(0);
-                    variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
+                    if (o instanceof List) {
+                        ArrayList<Map<String, String>> positionList = (ArrayList<Map<String, String>>)o;
+                        if (!positionList.isEmpty()) {
+                            Map<String, String> positionMap = positionList.get(0);
+                            variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
+                        }
+                    }
+                    //兼容之前的分片数据
+                    else if (o instanceof Map) {
+                        LinkedTreeMap<String, String> positionMap = (LinkedTreeMap<String, String>)o;
+                        variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
+                    }
                 }
             }
             context.getGlobalUserVariables().setGlobalVariablesMap(variablesJson.toJSONString());

@@ -74,4 +74,11 @@ public class Constants {
      */
     public static final String TPS_MODE_CONCURRENCY_LIMIT = "500";
 
+    /**
+     * 并发线程组 name
+     *
+     */
+    public static final String CONCURRENCY_THREAD_GROUP_NAME = "com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup";
+
+
 }
