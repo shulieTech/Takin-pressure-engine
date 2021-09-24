@@ -657,7 +657,18 @@ public class SystemResourceUtil {
         }
         return "127.0.0.1";
     }
-
+    /**
+     * 获取系统能承受的最大并发数
+     * 计算标准：2核3G最大并发1500个
+     */
+    public static int getMaxThreadNum() {
+        int cpuNum =  Runtime.getRuntime().availableProcessors();
+        double memorySize = Runtime.getRuntime().maxMemory()/1024d/1024d/1024d;
+        double rate = Math.min(cpuNum/2d, memorySize/3d);
+        int maxThread = (int)Math.floor(1500*rate);
+        logger.info("cpu="+cpuNum+", memory="+memorySize+"G"+", rate="+rate+", maxThread="+maxThread);
+        return maxThread;
+    }
 
     public static void main(String[] args) {
 //        try {

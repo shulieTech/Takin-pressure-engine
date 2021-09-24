@@ -46,4 +46,14 @@ public class StringUtils {
         }
         return source;
     }
+
+    public static String valueOf(Object o) {
+        if (null == o) {
+            return "";
+        }
+        if (o instanceof String) {
+            return (String) o;
+        }
+        return String.valueOf(o);
+    }
 }
