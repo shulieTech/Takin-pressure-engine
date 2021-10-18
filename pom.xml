@@ -22,7 +22,7 @@
     <groupId>io.shulie.flpt</groupId>
     <artifactId>pressure-engine</artifactId>
     <packaging>pom</packaging>
-    <version>Takin-1.0</version>
+    <version>Takin-5.0.0</version>
     <modules>
         <module>core</module>
         <module>plugins</module>

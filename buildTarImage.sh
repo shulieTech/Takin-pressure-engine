@@ -26,13 +26,13 @@ IMAGE_TAG="latest"
 
 #自定义参数 （以下变量需要根据自己实际情况进行修改）
 #JMETER源码路径
-JMETER_SOURCE_PATH=~/develop/workspaces/gitWorkspaces/Takin-jmeter
+JMETER_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-jmeter
 #Gradle目录
-GRADLE_HOME=~/.gradle/wrapper/dists/gradle-6.6-bin/dflktxzwamd4bv66q00iv4ga9/gradle-6.6
+GRADLE_HOME=/Users/shulie/Documents/gradle-6.6
 #Maven settings文件路径
-MAVEN_SETTINGS_PATH=~/develop/.m2/settings.xml
+MAVEN_SETTINGS_PATH=/Users/shulie/.m2/settings.xml
 #压测引擎项目源码根目录
-PRESSURE_ENGINE_SOURCE_PATH=~/develop/workspaces/gitWorkspaces/Takin-pressure-engine
+PRESSURE_ENGINE_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-pressure-engine
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"

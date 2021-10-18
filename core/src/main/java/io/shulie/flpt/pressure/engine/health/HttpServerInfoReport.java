@@ -77,7 +77,7 @@ public class HttpServerInfoReport {
                 .setConnectionManager(connManager)
                 .setMaxConnPerRoute(2)
                 .setMaxConnTotal(2)
-                .setUserAgent("Pressure-Engine" + "1.0")
+                .setUserAgent("Pressure-Engine" + "5.0.0")
                 .disableCookieManagement()
                 .disableConnectionState()
                 .build();
