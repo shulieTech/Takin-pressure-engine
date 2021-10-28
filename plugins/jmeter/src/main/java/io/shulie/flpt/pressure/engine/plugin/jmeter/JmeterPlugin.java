@@ -215,11 +215,16 @@ public class JmeterPlugin implements PressurePlugin {
         if (document == null) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "No jmx file found");
             FileUtils.writeTextFile(jmxFileContent, finalJmxFilePathName);
-            System.exit(-1);
+            logger.error("找不到jmx文件,或者文件内容为空：file="+context.getScriptFile().getAbsolutePath());
+            System.exit(-100);
         }
 
         //修改脚本
-        ScriptModifier.modifyDocument(document, context, supportedPressureModeAbilities);
+        boolean modifySuccess = ScriptModifier.modifyDocument(document, context, supportedPressureModeAbilities);
+        if (!modifySuccess) {
+            logger.error("jmx文件内容不符合预期，请检测jmx文件内容");
+            System.exit(-101);
+        }
 
         // xpath 实现 HTTP信息头管理器 插入 或者 header add 流量染色
         //ScriptModifier.headerManagerModify(document, sceneId + "", reportId + "", customerId + "");
@@ -251,7 +256,6 @@ public class JmeterPlugin implements PressurePlugin {
                     FileUtils.copyFileToDirectory(extraFile, finalJmxFolder);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
                 logger.warn("拷贝额外上传文件失败。", e);
             }
         }

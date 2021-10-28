@@ -31,7 +31,10 @@ import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.common.Constants;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.JmeterConstants;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.enums.NodeTypeEnum;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.DomUtils;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.Md5Util;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.XpathUtils;
 import io.shulie.flpt.pressure.engine.util.JsonUtils;
 import io.shulie.flpt.pressure.engine.util.NumberUtils;
@@ -42,6 +45,7 @@ import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
 import io.shulie.jmeter.tool.redis.RedisConfig;
 import io.shulie.jmeter.tool.redis.RedisUtil;
 import io.shulie.takin.constants.TakinRequestConstant;
+import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +87,7 @@ public class ScriptModifier {
      * @param context
      * @param pressurePlugin
      */
-    public static void modifyDocument(Document document, PressureContext context
+    public static boolean modifyDocument(Document document, PressureContext context
             , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //场景id string
         String sceneIdString = context.getSceneId() + "";
@@ -95,97 +99,108 @@ public class ScriptModifier {
 
         //处理压测数据
         List<Map<String, Object>> csvConfigs = context.getDataFileSets();
+        List<String> jarFilePathList = context.getJarFilePathList();
 
         //解析脚本
         Element root = document.getRootElement();
-        List<String> jarFilePathList = context.getJarFilePathList();
+        if (null == root) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file is empty!");
+            return false;
+        }
         // 第一层
-        List<Element> hashTreeElements = root.elements("hashTree");
+        List<Element> rootChildElements = DomUtils.elements(root);
+        if (CollectionUtils.isEmpty(rootChildElements) || rootChildElements.size() > 1) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content is error!");
+            return false;
+        }
+        Element rootConTainer = rootChildElements.get(0);
+        if (null == rootConTainer) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file is empty!");
+            return false;
+        }
+        List<Element> elements = DomUtils.elements(rootConTainer);
+        if (CollectionUtils.isEmpty(elements)) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file is empty!");
+            return false;
+        }
+        forbidResultCollector(elements);
+        //修改testname
+        modifyTestName(elements);
 
-        forbidResultCollector(hashTreeElements);
+        // *********************************TestPlan********************************
+        List<Element> testPlanElements = DomUtils.elements(rootConTainer, "TestPlan");
+        if (CollectionUtils.isEmpty(testPlanElements) || testPlanElements.size() > 1) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan or too many TestPlan!");
+            return false;
+        }
+        Element testPlanElement = testPlanElements.get(0);
+        // 将jar插件添加进去
+        addJarFiles(testPlanElement, jarFilePathList);
 
-        for (Element hashTreeElement : hashTreeElements) {
-            // *********************************TestPlan********************************
-            List<Element> testPlanElements = hashTreeElement.elements("TestPlan");
-            for (Element testPlanElement : testPlanElements) {
-                List<Element> stringPropElements = testPlanElement.elements("stringProp");
-                for (Element stringPropElement : stringPropElements) {
-                    Attribute nameAttr = stringPropElement.attribute("name");
-                    String nameAttrValue = nameAttr.getValue();
-                    if (nameAttrValue != null && nameAttrValue.equals("TestPlan.user_define_classpath")) {
-                        // jar
-                        if (jarFilePathList != null && !jarFilePathList.isEmpty()) {
-                            try {
-                                stringPropElement.setText(buildJarFilePathListString(jarFilePathList));
-                            } catch (Exception e) {
-                                logger.warn(e.getMessage(), e);
-                            }
-                        }
-                    }
-                }
+        // *********************************TestPlan********************************
+        // 第二层
+        List<Element> hashTree2Elements = DomUtils.elements(rootConTainer, "hashTree");
+        if (CollectionUtils.isEmpty(hashTree2Elements) || hashTree2Elements.size() > 1) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan hashTree or too many TestPlan hashTree!");
+            return false;
+        }
+        Element testPlanContainer = hashTree2Elements.get(0);
+        // HTTP信息头管理器 第二层以上包括第二层的xml中
+        // 添加线程组
+        threadGroupModify(testPlanContainer, context, supportedPressureModeAbilities);
+
+        // 添加 Local file
+        if(csvConfigs != null) {
+            csvPathModify(csvConfigs, testPlanContainer, context.getPodCount());
+        }
+
+        // 获取第三层
+        List<Element> hashTree3Elements = testPlanContainer.elements("hashTree");
+        for (Element hashTree3Element : hashTree3Elements) {
+            // todo 这里过滤下，只在多线程组中增加后端监控器
+            addBackEndListener(hashTree3Element, sceneIdString
+                , reportIdString, customerIdString, context);
+
+            // 只有巡检模式添加固定定时器
+            if (EnginePressureMode.INSPECTION_MODE == currentEnginePressureMode) {
+                logger.info("组装巡检模式添加固定定时器和断言");
+                // 循环时间
+                //addFixedTimer(hashTree3Element, enginePressureParams.get("fixed_timer"));
+                //modify by lipeng 20210609
+                // 固定定时器只能按每个请求等待固定时间，这里巡检的需求是每个线程组每隔固定时间请求，所以这里改为flow controller action组件
+                addFlowControllerAction(hashTree3Element, context.getEnginePressureParams().get("fixed_timer"));
+                //modify end;
+                // 增加判断断言
+                addFeanShellAssertion(hashTree3Element);
             }
-            // *********************************TestPlan********************************
-            // 第二层
-            List<Element> hashTree2Elements = hashTreeElement.elements("hashTree");
-            // HTTP信息头管理器 第二层以上包括第二层的xml中
-            for (Element hashTree2Element : hashTree2Elements) {
-                // 添加线程组
-                threadGroupModify(hashTree2Element, context, supportedPressureModeAbilities);
-
-                // 添加 Local file
-                if(csvConfigs != null) {
-                    csvPathModify(csvConfigs, hashTree2Element, context.getPodCount());
-                }
-
-                // 获取第三层
-                List<Element> hashTree3Elements = hashTree2Element.elements("hashTree");
-                for (Element hashTree3Element : hashTree3Elements) {
-                    // todo 这里过滤下，只在多线程组中增加后端监控器
-                    addBackEndListener(hashTree3Element, sceneIdString
-                        , reportIdString, customerIdString, context);
-
-                    // 只有巡检模式添加固定定时器
-                    if (EnginePressureMode.INSPECTION_MODE == currentEnginePressureMode) {
-                        logger.info("组装巡检模式添加固定定时器和断言");
-                        // 循环时间
-                        //addFixedTimer(hashTree3Element, enginePressureParams.get("fixed_timer"));
-                        //modify by lipeng 20210609
-                        // 固定定时器只能按每个请求等待固定时间，这里巡检的需求是每个线程组每隔固定时间请求，所以这里改为flow controller action组件
-                        addFlowControllerAction(hashTree3Element, context.getEnginePressureParams().get("fixed_timer"));
-                        //modify end;
-                        // 增加判断断言
-                        addFeanShellAssertion(hashTree3Element);
-                    }
-                    // add by lipeng  添加试跑模式
-                    else if (EnginePressureMode.TRY_RUN == currentEnginePressureMode) {
-                        logger.info("试跑模式开启..");
-                    }
-                }
-
-                // 添加全局参数 add by lipeng
-                // 全局参数只用添加一个，均可获取到
-                if (!globalArgumentsAdded) {
-                    addGlobalArguments(hashTree2Element, context.getGlobalUserVariables(), currentEnginePressureMode);
-                    // add by lipeng  添加traceId生成和添加到http header
-                    // 全局参数只用添加一个，均可获取到
-                    // 添加BeanShell 预处理程序 增加traceId生成
-                    //不使用beanshell改为程序内，beanshell性能较差
-                    //addTraceIdBeanShellPreProcessor(hashTree2Element, currentEnginePressureMode);
-                    // 添加请求头管理器
-                    addHttpHeaderParams(hashTree2Element, context.getHttpHeaderVariables(), currentEnginePressureMode);
-                    // add end
-                    globalArgumentsAdded = true;
-                }
-                // add end
+            // add by lipeng  添加试跑模式
+            else if (EnginePressureMode.TRY_RUN == currentEnginePressureMode) {
+                logger.info("试跑模式开启..");
             }
         }
+
+        // 添加全局参数 add by lipeng
+        // 全局参数只用添加一个，均可获取到
+        if (!globalArgumentsAdded) {
+            addGlobalArguments(testPlanContainer, context.getGlobalUserVariables(), currentEnginePressureMode);
+            // add by lipeng  添加traceId生成和添加到http header
+            // 全局参数只用添加一个，均可获取到
+            // 添加BeanShell 预处理程序 增加traceId生成
+            //不使用beanshell改为程序内，beanshell性能较差
+            //addTraceIdBeanShellPreProcessor(hashTree2Element, currentEnginePressureMode);
+            // 添加请求头管理器
+            addHttpHeaderParams(testPlanContainer, context.getHttpHeaderVariables(), currentEnginePressureMode);
+            // add end
+            globalArgumentsAdded = true;
+        }
+        // add end
 
         // add by lipeng 如果是TPS模式 存在多个业务活动，需要添加吞吐量控制器
         if (EnginePressureMode.TPS == currentEnginePressureMode) {
             List<BusinessActivity> businessActivities = context.getBusinessActivities();
             //只有是业务流程 也就是业务活动大于1个的时候才需要添加吞吐量控制器
             if (null == businessActivities || businessActivities.size()<=0) {
-                return;
+                return false;
             }
             int tpsThreadMode = NumberUtils.parseInt(context.getEnginePressureParams().get("tpsThreadMode"));
             if (0 == tpsThreadMode) {
@@ -206,6 +221,7 @@ public class ScriptModifier {
             updateJmxHttpPressTestTags(document);
             updateXmlDubboPressTestTags(document);
         }
+        return true;
     }
 
 
@@ -726,16 +742,8 @@ public class ScriptModifier {
     }
 
     private static String buildJarFilePathListString(List<String> jarFilePathList) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (String path : jarFilePathList) {
-            stringBuilder.append(path);
-            stringBuilder.append(",");
-        }
-        String str = stringBuilder.toString();
-        if (str.endsWith(",")) {
-            return str.substring(0, str.length() - 1);
-        }
-        return str;
+        return jarFilePathList.stream().filter(StringUtils::isNotBlank)
+                .collect(Collectors.joining(","));
     }
 
     private static void csvPathModify(List<Map<String, Object>> csvConfigs, Element parent, int podCount) {
@@ -1058,21 +1066,22 @@ public class ScriptModifier {
             .setText("S");
     }
 
-    private static void threadGroupModify(Element element, PressureContext context
+    private static void threadGroupModify(Element threadGroupContainer, PressureContext context
             , SupportedPressureModeAbilities supportedPressureModeAbilities) {
-
-        //测试计划的hashTree下所有节点
-        List<Element> elementsList = element.elements();
         //压力模式
         PressureTestMode pressureTestMode = PressureTestMode.getMode(context.getPressureMode());
+        //测试计划的hashTree下所有节点
+        List<Element> elementsList = DomUtils.elements(threadGroupContainer);
         for (Element hashTreeSubElement : elementsList) {
+            if (DomUtils.isNotEnabled(hashTreeSubElement)) {
+                continue;
+            }
+            NodeTypeEnum type = NodeTypeEnum.value(hashTreeSubElement.getName());
+            if (null == type || type != NodeTypeEnum.THREAD_GROUP) {
+                continue;
+            }
             //只要线程组元素 根据引擎压测模式更换线程组
             if (hashTreeSubElement.getName().endsWith("ThreadGroup")) {
-                //获取enabledValue 如果是false 就不予处理
-                String enabledValue = hashTreeSubElement.attributeValue("enabled");
-                if ("false".equals(enabledValue)) {
-                    continue;
-                }
                 //并发线程组
                 EnginePressureMode currentEnginePressureMode = context.getCurrentEnginePressureMode();
                 //并发模式
@@ -1854,6 +1863,64 @@ public class ScriptModifier {
                 if (nextLevel != null && nextLevel.size() > 0) {
                     forbidResultCollector(nextLevel);
                 }
+            }
+        }
+    }
+
+    /**
+     * 修改testPlan，线程组，控制器，取样器的testname为：testname+@+MD5(xpath)
+     */
+    private static void modifyTestName(List<Element> elements) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return;
+        }
+        for (int i = 0; i< elements.size(); i++) {
+            Element element = elements.get(i);
+            if (null == element) {
+                continue;
+            }
+            NodeTypeEnum type = NodeTypeEnum.value(element.getName());
+            if (null == type) {
+                continue;
+            }
+            String testName = element.attributeValue("testname");
+            String xpath = element.getUniquePath();
+            String xpathMd5 = Md5Util.md5(xpath);
+            element.addAttribute("testname", testName+"@"+xpathMd5);
+
+            Element childContainer = elements.get(i+1);
+            if ("hashTree".equals(childContainer.getName())) {
+                modifyTestName(DomUtils.elements(childContainer));
+            }
+        }
+    }
+
+    /**
+     * 将jar插件信息添加到脚本代码中
+     */
+    private static void addJarFiles(Element testPlanElement, List<String> jarFiles) {
+        if (CollectionUtils.isEmpty(jarFiles)) {
+            return;
+        }
+        List<Element> stringPropElements = DomUtils.elements(testPlanElement, "stringProp");
+        if (CollectionUtils.isNotEmpty(stringPropElements)) {
+            return;
+        }
+        for (Element stringPropElement : stringPropElements) {
+            Attribute nameAttr = stringPropElement.attribute("name");
+            if (null == nameAttr) {
+                continue;
+            }
+            String nameAttrValue = nameAttr.getValue();
+            if (null == nameAttrValue || !nameAttrValue.equals("TestPlan.user_define_classpath")) {
+                continue;
+            }
+            // jar
+            try {
+                stringPropElement.setText(buildJarFilePathListString(jarFiles));
+                break;
+            } catch (Exception e) {
+                logger.warn(e.getMessage(), e);
             }
         }
     }

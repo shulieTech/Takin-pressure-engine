@@ -15,8 +15,11 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter.util;
 
+import com.google.common.collect.Lists;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.DOMNodeConstants;
 import io.shulie.takin.constants.TakinRequestConstant;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -42,6 +45,45 @@ import java.util.Map;
 public abstract class DomUtils {
 
     private static Logger logger = LoggerFactory.getLogger(DomUtils.class);
+
+    /**
+     * 获取Element的子元素
+     */
+    public static List<Element> elements(Element element) {
+        return elements(element, null);
+    }
+
+    public static List<Element> elements(Element element, String elementName) {
+        if (null == element) {
+            return null;
+        }
+        List<?> elements = null;
+        if (StringUtils.isBlank(elementName)) {
+            elements = element.elements();
+        } else {
+            elements = element.elements(elementName);
+        }
+        if (CollectionUtils.isEmpty(elements)) {
+            return null;
+        }
+        List<Element> list = Lists.newArrayList();
+        for (Object o : elements) {
+            if (o instanceof Element) {
+                list.add((Element) o);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 判断一个元素是否启用
+     */
+    public static boolean isNotEnabled(Element element) {
+        if (null == element) {
+            return true;
+        }
+        return !Boolean.parseBoolean(element.attributeValue("enabled"));
+    }
 
 
     public static void headerManagerModify(Document document, String sceneId, String reportId, String customerId) {
