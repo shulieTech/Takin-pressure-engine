@@ -25,6 +25,10 @@ public interface EngineConstants {
 
     // 空字符串
     String EMPTY_TEXT = "";
+    /**
+     * testname和md5之间的分割符
+     */
+    String TEST_NAME_MD5_SPLIT = "@MD5:";
 
     // traceId变量值
     String GENERATE_TRACE_ID_VALUE = "${pradarTraceId}";

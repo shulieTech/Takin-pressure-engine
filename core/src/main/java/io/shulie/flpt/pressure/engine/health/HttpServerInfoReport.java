@@ -16,7 +16,7 @@
 package io.shulie.flpt.pressure.engine.health;
 
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
-import io.shulie.flpt.pressure.engine.util.JsonUtils;
+import io.shulie.flpt.pressure.engine.util.GsonUtils;
 import io.shulie.flpt.pressure.engine.util.StringUtils;
 import io.shulie.flpt.pressure.engine.util.SystemResourceUtil;
 import io.shulie.flpt.pressure.engine.util.TryUtils;
@@ -82,7 +82,8 @@ public class HttpServerInfoReport {
                 .disableConnectionState()
                 .build();
 
-        String consoleUrl = TryUtils.tryOperation(() -> String.valueOf(context.getTaskParams().get("consoleUrl")));
+//        String consoleUrl = TryUtils.tryOperation(() -> String.valueOf(context.getTaskParams().get("consoleUrl")));
+        String consoleUrl = context.getMetricCollectorUrl();
 
         if(StringUtils.isNotBlank(consoleUrl)) {
             consoleUrl = consoleUrl + "/api/collector/system/receive?ip=" + ip;
@@ -113,7 +114,7 @@ public class HttpServerInfoReport {
         }
 
         try{
-            String body = JsonUtils.obj2Json(pamrasMap);
+            String body = GsonUtils.obj2Json(pamrasMap);
             logger.info("server info : {}" , body);
             httpRequest.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
             lastRequest = httpClient.execute(httpRequest, new FutureCallback<HttpResponse>() {

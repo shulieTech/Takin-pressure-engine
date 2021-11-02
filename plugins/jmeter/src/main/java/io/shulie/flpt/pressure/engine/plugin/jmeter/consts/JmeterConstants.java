@@ -34,6 +34,10 @@ public class JmeterConstants extends Constants {
      *
      */
     public static final String TPS_THREAD_GROUP_NAME = "com.blazemeter.jmeter.threads.arrivals.ArrivalsThreadGroup";
+    /**
+     * 新的TPS线程组
+     */
+    public static final String TPS_NEW_THREAD_GROUP_NAME = "com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroup";
 
     /**
      * 线程组

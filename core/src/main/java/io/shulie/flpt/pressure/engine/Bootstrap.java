@@ -21,26 +21,21 @@ import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
 import io.shulie.flpt.pressure.engine.api.constants.EngineConstants;
 import io.shulie.flpt.pressure.engine.api.entity.*;
-import io.shulie.flpt.pressure.engine.api.enums.EnginePressureMode;
+import io.shulie.flpt.pressure.engine.api.enums.PressureSceneEnum;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.api.plugin.PressurePlugin;
 import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
 import io.shulie.flpt.pressure.engine.common.Constants;
+import io.shulie.flpt.pressure.engine.api.entity.EngineRunConfig;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
-import io.shulie.flpt.pressure.engine.util.FileUtils;
-import io.shulie.flpt.pressure.engine.util.JsonUtils;
-import io.shulie.flpt.pressure.engine.util.StringUtils;
-import io.shulie.flpt.pressure.engine.util.TryUtils;
+import io.shulie.flpt.pressure.engine.util.*;
 import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
-import io.shulie.takin.constants.TakinRequestConstant;
+import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.math.BigDecimal;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
@@ -74,7 +69,7 @@ public class Bootstrap {
     private static final String THREAD_NAME_FORMAT = "thread-call-runner-%d";
 
     //默认采样率
-    private static final String DEFAULT_TRACE_SAMPLING = "1";
+    private static final int DEFAULT_TRACE_SAMPLING = 1;
 
     public static void main(String[] args) {
         // 初始化公共方法
@@ -103,9 +98,12 @@ public class Bootstrap {
         logger.info("Bootstrap startup, args length: {} args: {}", args.length, args);
 
         logger.info("Task config acquired, config: {}", configurations);
-        Map<String, Object> taskInfoMap = JsonUtils.json2Obj(configurations, Map.class);
-        //初始化上下文 add by lipeng
-        initialPressureContext(taskInfoMap);
+        EngineRunConfig config = JsonUtils.parseObject(configurations, EngineRunConfig.class);
+        initialPressureContext(config);
+
+//        Map<String, Object> taskInfoMap = JsonUtils.json2Obj(configurations, Map.class);
+//        //初始化上下文 add by lipeng
+//        initialPressureContext(taskInfoMap);
         //执行压测
         doPressureTest();
 
@@ -163,7 +161,7 @@ public class Bootstrap {
         scheduExec.scheduleAtFixedRate(() -> {
             String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT);
             logger.info("获取中断状态：{}", result);
-            JsonObject jsonObject = JsonUtils.json2Obj(result, JsonObject.class);
+            JsonObject jsonObject = GsonUtils.json2Obj(result, JsonObject.class);
             if (jsonObject != null && jsonObject.get("data").getAsBoolean()) {
                 //发生中断  获取事件
                 StopResponse response = pressurePlugin.stopPressureTest(context);
@@ -287,7 +285,7 @@ public class Bootstrap {
         }
 
         //  脚本未找到 回传
-        if (scriptFile == null || !scriptFile.exists()) {
+        if (!scriptFile.exists()) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
                     "No script file found, 请检查配置目录是否正确");
             logger.warn("No script file found, 请检查配置目录是否正确");
@@ -298,37 +296,53 @@ public class Bootstrap {
         context.setJarFilePathList(jarFilePathList);
     }
 
-    private static void initialPressureContext(Map<String, Object> taskInfoMap) {
-        context = new PressureContext();
-
-        context.setMemSetting(
-                taskInfoMap.containsKey("memSetting") ? String.valueOf(taskInfoMap.get("memSetting")) : null);
-
-        context.setTaskParams(taskInfoMap);
-
-        Long sceneId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
-                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_SCENE_HEADER_VALUE)))));
-        if(sceneId == null || sceneId == 0) {
+    private static void initialPressureContext(EngineRunConfig config) {
+        Long sceneId = config.getSceneId();
+        if(null == sceneId || 0 == sceneId) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "无效的场景id参数");
             logger.error("invalid pressure sceneId, sceneId is '{}'", sceneId);
             System.exit(-1);
         }
-        context.setSceneId(sceneId);
-        Long reportId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
-                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_TASK_HEADER_VALUE)))));
-        if(reportId == null || reportId == 0) {
+        Long reportId = config.getTaskId();
+        if(null == reportId || 0 == reportId) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "无效的报告id参数");
             logger.error("invalid pressure reportId, reportId is '{}'", reportId);
             System.exit(-1);
         }
+        EnginePressureConfig pressureConfig = config.getPressureConfig();
+        if (null == pressureConfig) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "施压参数为空");
+            logger.error("invalid pressureConfig, pressureConfig is null!");
+            System.exit(-1);
+        }
+        //metrics数据上报地址
+        String metricCollectorUrl = config.getConsoleUrl();
+        if (StringUtils.isBlank(metricCollectorUrl)) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "No found metricCollectorUrl");
+            System.exit(-1);
+        }
+        String takinCloudCallbackUrl = config.getCallbackUrl();
+        if(StringUtils.isBlank(takinCloudCallbackUrl)) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "cloud回调地址不能为空");
+            logger.error("cloud callback url can not be empty");
+            System.exit(-1);
+        }
+        Long customerId = config.getCustomerId();
+
+        context = new PressureContext();
+        context.setSceneId(sceneId);
         context.setReportId(reportId);
-        Long customerId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
-                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_CUSTOMER_HEADER_VALUE)))));
         context.setCustomerId(customerId);
+        context.setMemSetting(config.getMemSetting());
+        context.setMetricCollectorUrl(metricCollectorUrl);
+        context.setLogDir(config.getPressureEnginePathUrl());
+        if (StringUtils.isBlank(context.getLogDir())) {
+            context.setLogDir(StringUtils.formatStr(Constants.PRESSURE_LOG_DIR));
+        }
 
         String taskDir = StringUtils.formatStr(Constants.PRESSURE_TASK_DIR);
         //压测引擎log路径
-        String logDir = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("pressureEnginePathUrl")));
+        String logDir = config.getPressureEnginePathUrl();
         if(StringUtils.isBlank(logDir)) {
             logDir = StringUtils.formatStr(Constants.PRESSURE_LOG_DIR);
         }
@@ -347,84 +361,166 @@ public class Bootstrap {
         context.setResourcesDir(taskDir + "resources");
 
         //脚本路径
-        String scriptPath = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("scriptPath")));
-        context.setScriptPath(scriptPath);
+        context.setScriptPath(config.getScriptPath());
         //获取引擎插件路径
-        List<String> enginePluginsFilePath = TryUtils.tryOperation(
-                () -> (List<String>)taskInfoMap.get("enginePluginsFilePath"));
-        context.setEnginePluginsFilePath(enginePluginsFilePath);
-        //施压模式
-        context.setPressureMode(TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("pressureMode"))));
-        //压测时长
-        //modify by lipeng  gson会讲数字都转为double科学计数法存储，这里转换回long
-        Double continuedTimeDouble = TryUtils.tryOperation(
-                () -> (Double)taskInfoMap.get("continuedTime"));
-        Long continuedTime = new BigDecimal(continuedTimeDouble).longValue();
-        context.setDuration(continuedTime);
-        //modify end
-        //目标期望值
-        context.setExpectThroughput(TryUtils.tryOperation(
-                () -> Long.parseLong(StringUtils.removePoint(String.valueOf(taskInfoMap.get("expectThroughput"))))));
-        //递增时长
-        context.setRampUp(TryUtils.tryOperation(
-                () -> Long.parseLong(StringUtils.removePoint(String.valueOf(taskInfoMap.get("rampUp"))))));
-        //阶梯层数
-        context.setSteps(TryUtils.tryOperation(
-                () -> Long.parseLong(StringUtils.removePoint(String.valueOf(taskInfoMap.get("steps"))))));
-        //metrics数据上报地址
-        String metricCollectorUrl = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("consoleUrl")));
-        if (StringUtils.isBlank(metricCollectorUrl)) {
-            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "No found metricCollectorUrl");
-            System.exit(-1);
-        }
-        context.setMetricCollectorUrl(metricCollectorUrl);
-        //businessMap
-        context.setBusinessMap(TryUtils.tryOperation(
-                () -> JsonUtils.json2Obj(String.valueOf(taskInfoMap.get("businessMap")), Map.class)));
-        //数据文件集合
-        context.setDataFileSets(TryUtils.tryOperation(
-                () -> (List<Map<String, Object>>)taskInfoMap.get("fileSets")));
-        //podCount
-        context.setPodCount(TryUtils.tryOperation(
-                () -> Integer.parseInt(StringUtils.removePoint(String.valueOf(taskInfoMap.get("podCount"))))));
-        //获取引擎压测参数
-        Map<String, Object> enginePressureParams = TryUtils.tryOperation(
-                () -> (Map<String, Object>)taskInfoMap.get("enginePressureParams"));
-        context.setEnginePressureParams(enginePressureParams);
+        context.setEnginePluginsFilePath(config.getEnginePluginsFiles());
+        context.setNewVersion(BooleanUtils.isTrue(config.getNewVersion()));
         //引擎压力模式
-        String modeValue = String.valueOf(enginePressureParams.get("enginePressureMode"));
-        context.setEnginePressureMode(modeValue);
+        Integer pressureScene = config.getPressureScene();
+        context.setEnginePressureMode(pressureScene);
         //引擎压力模式枚举
         //当前引擎压测模式  默认并发模式
-        EnginePressureMode currentEnginePressureMode = EnginePressureMode.CONCURRENCY;
-        if (StringUtils.isNotBlank(modeValue)) {
-            currentEnginePressureMode = EnginePressureMode.getMode(modeValue);
-            if (currentEnginePressureMode == null) {
-                logger.warn("当前引擎压测模式参数'{}'不在支持的范围内，已将引擎压测模式更改为并发模式", modeValue);
-                currentEnginePressureMode = EnginePressureMode.CONCURRENCY;
-            }
+        //TODO 压测引起模式需要改造成：常规模式、试跑模式、巡检模式
+        PressureSceneEnum pressureSceneEnum = PressureSceneEnum.value(pressureScene);
+        if (null == pressureSceneEnum) {
+            logger.warn("当前引擎压测模式参数'{}'不在支持的范围内，已将引擎压测模式更改为并发模式", pressureScene);
+            pressureSceneEnum = PressureSceneEnum.DEFAULT;
         }
-        context.setCurrentEnginePressureMode(currentEnginePressureMode);
+        context.setPressureScene(pressureSceneEnum);
+
+        //压测时长
+        context.setDuration(config.getContinuedTime());
+        //目标期望值
+        context.setExpectThroughput(config.getExpectThroughput());
+        context.setBusinessMap(config.getBusinessMap());
+        //数据文件集合
+        context.setDataFileSets(config.getFileSets());
+        //podCount
+        context.setPodCount(config.getPodCount());
+        //压测配置信息
+        context.setPressureConfig(config.getPressureConfig());
         //启动模式
         context.setStartMode(System.getProperty("start.mode"));
-        //采样率
+        //pod序号
+        context.setPodNumber(System.getProperty("pod.number"));
+
         //采样率 默认1 全部
-        String traceSampling = DEFAULT_TRACE_SAMPLING;
-        if (enginePressureParams != null && !enginePressureParams.isEmpty()) {
-            traceSampling = TryUtils.tryOperation(() -> String.valueOf(enginePressureParams.get("traceSampling")));
-            if (traceSampling == null || "null".equals(traceSampling) || StringUtils.isBlank(traceSampling)) {
-                traceSampling = DEFAULT_TRACE_SAMPLING;
-            }
+        int traceSampling = DEFAULT_TRACE_SAMPLING;
+        if (null != pressureConfig.getTraceSampling()) {
+            traceSampling = pressureConfig.getTraceSampling();
         }
         context.setTraceSampling(traceSampling);
         //cloud回调地址
-        String takinCloudCallbackUrl = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("takinCloudCallbackUrl")));
-        if(StringUtils.isBlank(takinCloudCallbackUrl)) {
-            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "cloud回调地址不能为空");
-            logger.error("cloud callback url can not be empty");
-            System.exit(-1);
-        }
         context.setCloudCallbackUrl(takinCloudCallbackUrl);
+
+//        context.setTaskParams(taskInfoMap);
+
+//        context.setMemSetting(
+//                taskInfoMap.containsKey("memSetting") ? String.valueOf(taskInfoMap.get("memSetting")) : null);
+//
+//
+//        context.setSceneId(sceneId);
+//        Long reportId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
+//                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_TASK_HEADER_VALUE)))));
+//        if(reportId == null || reportId == 0) {
+//            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "无效的报告id参数");
+//            logger.error("invalid pressure reportId, reportId is '{}'", reportId);
+//            System.exit(-1);
+//        }
+//        context.setReportId(reportId);
+//        Long customerId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
+//                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_CUSTOMER_HEADER_VALUE)))));
+//        context.setCustomerId(customerId);
+//
+//        String taskDir = StringUtils.formatStr(Constants.PRESSURE_TASK_DIR);
+//        //压测引擎log路径
+//        String logDir = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("pressureEnginePathUrl")));
+//        if(StringUtils.isBlank(logDir)) {
+//            logDir = StringUtils.formatStr(Constants.PRESSURE_LOG_DIR);
+//        }
+//        //logs
+//        String logPath = logDir + "logs";
+//        logPath = logPath + File.separator + sceneId + File.separator + reportId;
+//        System.setProperty(Constants.TASK_LOG_DIR_KEY, logPath);
+//        // ptl
+//        String ptlPath = logDir + "ptl";
+//        ptlPath = ptlPath + File.separator + sceneId + File.separator + reportId;
+//        System.setProperty(Constants.TASK_JTL_DIR_KEY, ptlPath);
+//
+//        context.setTaskDir(taskDir);
+//        context.setLogDir(logPath);
+//        context.setPtlDir(ptlPath);
+//        context.setResourcesDir(taskDir + "resources");
+//
+//        //脚本路径
+//        String scriptPath = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("scriptPath")));
+//        context.setScriptPath(scriptPath);
+//        //获取引擎插件路径
+//        List<String> enginePluginsFilePath = TryUtils.tryOperation(
+//                () -> (List<String>)taskInfoMap.get("enginePluginsFilePath"));
+//        context.setEnginePluginsFilePath(enginePluginsFilePath);
+//        //施压模式
+//        context.setPressureMode(TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("pressureMode"))));
+//        //压测时长
+//        //modify by lipeng  gson会讲数字都转为double科学计数法存储，这里转换回long
+//        Double continuedTimeDouble = TryUtils.tryOperation(
+//                () -> (Double)taskInfoMap.get("continuedTime"));
+//        Long continuedTime = new BigDecimal(continuedTimeDouble).longValue();
+//        context.setDuration(continuedTime);
+//        //modify end
+//        //目标期望值
+//        context.setExpectThroughput(TryUtils.tryOperation(
+//                () -> Long.parseLong(StringUtils.removePoint(String.valueOf(taskInfoMap.get("expectThroughput"))))));
+//        //递增时长
+//        context.setRampUp(TryUtils.tryOperation(
+//                () -> Long.parseLong(StringUtils.removePoint(String.valueOf(taskInfoMap.get("rampUp"))))));
+//        //阶梯层数
+//        context.setSteps(TryUtils.tryOperation(
+//                () -> Long.parseLong(StringUtils.removePoint(String.valueOf(taskInfoMap.get("steps"))))));
+//        //metrics数据上报地址
+//        String metricCollectorUrl = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("consoleUrl")));
+//        if (StringUtils.isBlank(metricCollectorUrl)) {
+//            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "No found metricCollectorUrl");
+//            System.exit(-1);
+//        }
+//        context.setMetricCollectorUrl(metricCollectorUrl);
+//        //businessMap
+//        context.setBusinessMap(TryUtils.tryOperation(
+//                () -> JsonUtils.json2Obj(String.valueOf(taskInfoMap.get("businessMap")), Map.class)));
+//        //数据文件集合
+//        context.setDataFileSets(TryUtils.tryOperation(
+//                () -> (List<Map<String, Object>>)taskInfoMap.get("fileSets")));
+//        //podCount
+//        context.setPodCount(TryUtils.tryOperation(
+//                () -> Integer.parseInt(StringUtils.removePoint(String.valueOf(taskInfoMap.get("podCount"))))));
+//        //获取引擎压测参数
+//        Map<String, Object> enginePressureParams = TryUtils.tryOperation(
+//                () -> (Map<String, Object>)taskInfoMap.get("enginePressureParams"));
+//        context.setEnginePressureParams(enginePressureParams);
+//        //引擎压力模式
+//        String modeValue = String.valueOf(enginePressureParams.get("enginePressureMode"));
+//        context.setEnginePressureMode(modeValue);
+//        //引擎压力模式枚举
+//        //当前引擎压测模式  默认并发模式
+//        EnginePressureMode currentEnginePressureMode = EnginePressureMode.CONCURRENCY;
+//        if (StringUtils.isNotBlank(modeValue)) {
+//            currentEnginePressureMode = EnginePressureMode.getMode(modeValue);
+//            if (currentEnginePressureMode == null) {
+//                logger.warn("当前引擎压测模式参数'{}'不在支持的范围内，已将引擎压测模式更改为并发模式", modeValue);
+//                currentEnginePressureMode = EnginePressureMode.CONCURRENCY;
+//            }
+//        }
+//        context.setCurrentEnginePressureMode(currentEnginePressureMode);
+//        //启动模式
+//        context.setStartMode(System.getProperty("start.mode"));
+//        //采样率
+//        //采样率 默认1 全部
+//        String traceSampling = DEFAULT_TRACE_SAMPLING;
+//        if (enginePressureParams != null && !enginePressureParams.isEmpty()) {
+//            traceSampling = TryUtils.tryOperation(() -> String.valueOf(enginePressureParams.get("traceSampling")));
+//            if (traceSampling == null || "null".equals(traceSampling) || StringUtils.isBlank(traceSampling)) {
+//                traceSampling = DEFAULT_TRACE_SAMPLING;
+//            }
+//        }
+//        context.setTraceSampling(traceSampling);
+//        //cloud回调地址
+//        String takinCloudCallbackUrl = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("takinCloudCallbackUrl")));
+//        if(StringUtils.isBlank(takinCloudCallbackUrl)) {
+//            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "cloud回调地址不能为空");
+//            logger.error("cloud callback url can not be empty");
+//            System.exit(-1);
+//        }
+//        context.setCloudCallbackUrl(takinCloudCallbackUrl);
         //初始化全局参数
         // 组装GlobalUserVariables
         GlobalUserVariables globalUserVariables = new GlobalUserVariables();
@@ -432,42 +528,41 @@ public class Bootstrap {
         globalUserVariables.setReportId(reportId+"");
         globalUserVariables.setCustomerId(customerId+"");
         globalUserVariables.setTakinCloudCallbackUrl(takinCloudCallbackUrl);
-        globalUserVariables.setEnginePressureMode(context.getCurrentEnginePressureMode().getCode());
+//        globalUserVariables.setEnginePressureMode(context.getCurrentEnginePressureMode().getCode());
         context.setGlobalUserVariables(globalUserVariables);
         //初始化请求头参数
         //组装HttpHeader信息
         HttpHeaderVariables httpHeaderVariables = new HttpHeaderVariables();
         httpHeaderVariables.setPradarTraceId(EngineConstants.GENERATE_TRACE_ID_VALUE);
         //将reportId传递到head
-        httpHeaderVariables.setPradarUserdata(context.getReportId() + "");
+        httpHeaderVariables.setPradarUserdata(reportId + "");
         //header需要透传rpcid  目前为0
         httpHeaderVariables.setPradarRpcId("0");
         context.setHttpHeaderVariables(httpHeaderVariables);
         //业务活动信息
         //处理业务活动
-        List<Map<String, String>> businessActivities = (List<Map<String, String>>)context.getEnginePressureParams()
-                .get("businessActivities");
+        List<Map<String, String>> businessActivities = pressureConfig.getBusinessActivities();
         List<BusinessActivity> listBusinessActivities = new ArrayList<>();
         if(businessActivities != null && businessActivities.size() > 0) {
             for(Map<String, String> map : businessActivities) {
-                listBusinessActivities.add(BusinessActivity
-                        .build(map.get("elementTestName"), map.get("throughputPercent")));
+                listBusinessActivities.add(BusinessActivity.build(map.get("elementTestName"), map.get("throughputPercent")));
             }
         }
         context.setBusinessActivities(listBusinessActivities);
         //后端监听器对列长度
-        String pressureEngineBackendQueueCapacity = String.valueOf(enginePressureParams
-                .get("pressureEngineBackendQueueCapacity"));
+        String pressureEngineBackendQueueCapacity = pressureConfig.getPressureEngineBackendQueueCapacity();
+//        String pressureEngineBackendQueueCapacity = String.valueOf(enginePressureParams
+//                .get("pressureEngineBackendQueueCapacity"));
         context.setPressureEngineBackendQueueCapacity(pressureEngineBackendQueueCapacity);
-        //循环次数
-        Long loops = -1L;
-        try {
-            loops = Long.parseLong(String.valueOf(context.getEnginePressureParams()
-                .get("loops_num") == null ? "-1" : context.getEnginePressureParams().get("loops_num")));
-        } catch (Exception e) {
-            logger.warn("loops_num is invalid, reset to -1");
-        }
-        context.setLoops(loops);
+//        //循环次数
+//        Long loops = -1L;
+//        try {
+//            loops = Long.parseLong(String.valueOf(context.getEnginePressureParams()
+//                .get("loops_num") == null ? "-1" : context.getEnginePressureParams().get("loops_num")));
+//        } catch (Exception e) {
+//            logger.warn("loops_num is invalid, reset to -1");
+//        }
+//        context.setLoops(loops);
     }
 
 }

@@ -15,38 +15,57 @@
 
 package io.shulie.flpt.pressure.engine.api.enums;
 
+import lombok.Getter;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Create by xuyh at 2020/5/12 20:45.
  */
-public enum PressureTestMode {
+public enum PressureTestModeEnum {
 
-    FIXED("fixed", "固定压力值"),
-    LINEAR("linear", "线性递增"),
-    STAIR("stair", "阶梯递增");
+    /**
+     * 固定压力值
+     */
+    FIXED(1,"固定压力值"),
+    /**
+     * 线性递增
+     */
+    LINEAR(2,"线性递增"),
+    /**
+     * 阶梯递增
+     */
+    STAIR(3,"阶梯递增"),
 
-    private String code;
+    ;
+
+    @Getter
+    private int code;
+    @Getter
     private String description;
 
-    PressureTestMode(String code, String description) {
+    PressureTestModeEnum(int code, String description) {
         this.code = code;
         this.description = description;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public static PressureTestMode getMode(String code) {
-        for (PressureTestMode pressureTestMode : PressureTestMode.values()) {
-            if (pressureTestMode.getCode().equalsIgnoreCase(code)) {
-                return pressureTestMode;
-            }
+    private static final Map<Integer, PressureTestModeEnum> pool = new HashMap<>();
+    static {
+        for (PressureTestModeEnum e : PressureTestModeEnum.values()) {
+            pool.put(e.code, e);
         }
-        return PressureTestMode.FIXED;
+    }
+
+    public static PressureTestModeEnum value(Integer code) {
+        if (null == code) {
+            return FIXED;
+        }
+        PressureTestModeEnum mode = pool.get(code);
+        if (null == mode) {
+            mode = FIXED;
+        }
+        return mode;
     }
 
     @Override

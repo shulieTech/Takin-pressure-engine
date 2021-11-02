@@ -16,7 +16,7 @@
 package io.shulie.flpt.pressure.engine.api.annotation;
 
 import io.shulie.flpt.pressure.engine.api.constants.EngineConstants;
-import io.shulie.flpt.pressure.engine.api.enums.EnginePressureMode;
+import io.shulie.flpt.pressure.engine.api.enums.PressureSceneEnum;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -37,5 +37,5 @@ public @interface HttpHeaderParamKey {
     String value() default EngineConstants.EMPTY_TEXT;
 
     //专为某些引擎压测模式的指定参数  不指定则认为是所有模式均可使用
-    EnginePressureMode[] assignForMode() default {};
+    PressureSceneEnum[] assignForMode() default {};
 }

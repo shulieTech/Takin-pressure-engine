@@ -15,55 +15,60 @@
 
 package io.shulie.flpt.pressure.engine.api.enums;
 
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 引擎压测模式
+ * 压测场景枚举
  *
  * @author lipeng
  *
  */
-public enum EnginePressureMode {
+public enum PressureSceneEnum {
 
-    CONCURRENCY("0", "并发模式"),
+//    CONCURRENCY(0, "并发模式"),
+//
+//    TPS(1, "TPS模式"),
+//
+//    CUSTOMIZE(2, "自定义模式"),
 
-    TPS("1", "TPS模式"),
+    DEFAULT(0, "常规模式"),
 
-    CUSTOMIZE("2", "自定义模式"),
+    FLOW_DEBUG(3,"流量调试"),
 
-    FLOW_DEBUG("3","流量调试"),
+    INSPECTION_MODE(4,"巡检模式"),
 
-    INSPECTION_MODE("4","巡检模式"),
-
-    TRY_RUN("5", "试跑模式")
+    TRY_RUN(5, "试跑模式")
     ;
 
-    private String code;
+    @Getter
+    private int code;
 
+    @Getter
     private String description;
 
-    private static final Map<String, EnginePressureMode> instances = new HashMap<>();
+    private static final Map<Integer, PressureSceneEnum> instances = new HashMap<>();
 
     static {
-        for(EnginePressureMode enginePressureMode : EnginePressureMode.values()) {
+        for(PressureSceneEnum enginePressureMode : PressureSceneEnum.values()) {
             instances.put(enginePressureMode.getCode(), enginePressureMode);
         }
+        //为了兼容老版本数据，将1，2转化为常规模式
+        instances.put(1, DEFAULT);
+        instances.put(2, DEFAULT);
     }
 
-    EnginePressureMode(String code, String description) {
+    PressureSceneEnum(Integer code, String description) {
         this.code = code;
+        this.description = description;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public static EnginePressureMode getMode(String code) {
+    public static PressureSceneEnum value(Integer code) {
+        if (null == code) {
+            return null;
+        }
         return instances.get(code);
     }
 

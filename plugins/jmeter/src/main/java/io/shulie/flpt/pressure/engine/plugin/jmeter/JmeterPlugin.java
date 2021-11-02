@@ -15,12 +15,13 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import com.google.gson.internal.LinkedTreeMap;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePtlLogConfig;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.api.plugin.PressurePlugin;
@@ -32,7 +33,6 @@ import io.shulie.flpt.pressure.engine.plugin.jmeter.util.DomUtils;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
 import io.shulie.flpt.pressure.engine.util.*;
 import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
-import io.shulie.takin.constants.TakinRequestConstant;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
@@ -68,15 +68,13 @@ public class JmeterPlugin implements PressurePlugin {
         for (String arg : argsRaw) {
             argsList.add(arg);
         }
-        Map<String, Object> params = context.getTaskParams();
-        String backend_listener_scene_id_Value = TryUtils.tryOperation(() -> StringUtils
-            .removePoint(String.valueOf(params.get(TakinRequestConstant.CLUSTER_TEST_SCENE_HEADER_VALUE))));
-        String backend_listener_report_id_Value = TryUtils.tryOperation(() -> StringUtils
-            .removePoint(String.valueOf(params.get(TakinRequestConstant.CLUSTER_TEST_TASK_HEADER_VALUE))));
+//        Map<String, Object> params = context.getTaskParams();
+        String backend_listener_scene_id_Value = String.valueOf(context.getSceneId());
+        String backend_listener_report_id_Value = String.valueOf(context.getReportId());
         // 新增 客户id 一定有
-        String backend_listener_customer_id_Value = TryUtils.tryOperation(() -> StringUtils
-            .removePoint(String.valueOf(params.get(TakinRequestConstant.CLUSTER_TEST_CUSTOMER_HEADER_VALUE))));
-        Map<String, Object> businessMap = TryUtils.tryOperation(() -> (Map<String, Object>)params.get("businessMap"));
+        String backend_listener_customer_id_Value = String.valueOf(context.getCustomerId());
+        Map<String, String> businessMap = context.getBusinessMap();
+//        Map<String, Object> businessMap = TryUtils.tryOperation(() -> (Map<String, Object>)params.get("businessMap"));
         if (backend_listener_scene_id_Value != null && !backend_listener_scene_id_Value.equals("null")) {
             argsList.add("-Dbackend_listener_scene_id=" + backend_listener_scene_id_Value);
         }
@@ -87,32 +85,60 @@ public class JmeterPlugin implements PressurePlugin {
         if (backend_listener_customer_id_Value != null && !backend_listener_customer_id_Value.equals("null")) {
             argsList.add("-Dbackend_listener_customer_id=" + backend_listener_customer_id_Value);
         }
-        Map<String, Object> enginePressureParams = TryUtils.tryOperation(
-                () -> (Map<String, Object>)params.get("enginePressureParams"));
-
-        if (enginePressureParams != null && !enginePressureParams.isEmpty()){
-            String ptlLogConfig = TryUtils.tryOperation(() -> String.valueOf(enginePressureParams.get("ptlLogConfig")));
-            Map<String, Object> ptlLogConfigMap = JSON.parseObject(ptlLogConfig, Map.class);
-            if (ptlLogConfigMap != null && ptlLogConfigMap.size() > 0) {
-                for(Map.Entry<String, Object> entry : ptlLogConfigMap.entrySet()) {
-                    argsList.add("-Dptl."+entry.getKey()+"=" + entry.getValue());
-                }
+        EnginePressureConfig pressureConfig = context.getPressureConfig();
+        EnginePtlLogConfig ptlLogConfig = pressureConfig.getPtlLogConfig();
+        if (null != ptlLogConfig) {
+            if (null != ptlLogConfig.getPtlFileEnable()) {
+                argsList.add("-Dptl.ptlFileEnable=" + ptlLogConfig.getPtlFileEnable());
             }
-            //设置上传队列大小
-            argsList.add("-DlogQueueSize=" + enginePressureParams.get("logQueueSize"));
-            argsList.add("-DzkServers=" + enginePressureParams.get("zkServers"));
-            
-            argsList.add("-DengineRedisAddress=" + enginePressureParams.get("engineRedisAddress"));
-            argsList.add("-DengineRedisPort=" + enginePressureParams.get("engineRedisPort"));
-            argsList.add("-DengineRedisSentinelNodes=" + enginePressureParams.get("engineRedisSentinelNodes"));
-            argsList.add("-DengineRedisSentinelMaster=" + enginePressureParams.get("engineRedisSentinelMaster"));
-            argsList.add("-DengineRedisPassword=" + enginePressureParams.get("engineRedisPassword"));
+            if (null != ptlLogConfig.getPtlFileErrorOnly()) {
+                argsList.add("-Dptl.ptlFileErrorOnly=" + ptlLogConfig.getPtlFileErrorOnly());
+            }
+            if (null != ptlLogConfig.getPtlFileTimeoutOnly()) {
+                argsList.add("-Dptl.ptlFileTimeoutOnly=" + ptlLogConfig.getPtlFileTimeoutOnly());
+            }
+            if (null != ptlLogConfig.getTimeoutThreshold()) {
+                argsList.add("-Dptl.timeoutThreshold=" + ptlLogConfig.getTimeoutThreshold());
+            }
+            if (null != ptlLogConfig.getLogCutOff()) {
+                argsList.add("-Dptl.logCutOff=" + ptlLogConfig.getLogCutOff());
+            }
         }
+        //设置上传队列大小
+        argsList.add("-DlogQueueSize=" + pressureConfig.getLogQueueSize());
+        argsList.add("-DzkServers=" + pressureConfig.getZkServers());
+        argsList.add("-DengineRedisAddress=" + pressureConfig.getEngineRedisAddress());
+        argsList.add("-DengineRedisPort=" + pressureConfig.getEngineRedisPort());
+        argsList.add("-DengineRedisSentinelNodes=" + pressureConfig.getEngineRedisSentinelNodes());
+        argsList.add("-DengineRedisSentinelMaster=" + pressureConfig.getEngineRedisSentinelMaster());
+        argsList.add("-DengineRedisPassword=" + pressureConfig.getEngineRedisPassword());
+
+//        Map<String, Object> enginePressureParams = TryUtils.tryOperation(
+//                () -> (Map<String, Object>)params.get("enginePressureParams"));
+
+//        if (enginePressureParams != null && !enginePressureParams.isEmpty()){
+//            String ptlLogConfig = TryUtils.tryOperation(() -> String.valueOf(enginePressureParams.get("ptlLogConfig")));
+//            Map<String, Object> ptlLogConfigMap = JSON.parseObject(ptlLogConfig, Map.class);
+//            if (ptlLogConfigMap != null && ptlLogConfigMap.size() > 0) {
+//                for(Map.Entry<String, Object> entry : ptlLogConfigMap.entrySet()) {
+//                    argsList.add("-Dptl."+entry.getKey()+"=" + entry.getValue());
+//                }
+//            }
+//            //设置上传队列大小
+//            argsList.add("-DlogQueueSize=" + enginePressureParams.get("logQueueSize"));
+//            argsList.add("-DzkServers=" + enginePressureParams.get("zkServers"));
+//
+//            argsList.add("-DengineRedisAddress=" + enginePressureParams.get("engineRedisAddress"));
+//            argsList.add("-DengineRedisPort=" + enginePressureParams.get("engineRedisPort"));
+//            argsList.add("-DengineRedisSentinelNodes=" + enginePressureParams.get("engineRedisSentinelNodes"));
+//            argsList.add("-DengineRedisSentinelMaster=" + enginePressureParams.get("engineRedisSentinelMaster"));
+//            argsList.add("-DengineRedisPassword=" + enginePressureParams.get("engineRedisPassword"));
+//        }
 
         if (businessMap != null) {
-            for (Map.Entry<String, Object> entry : businessMap.entrySet()) {
+            for (Map.Entry<String, String> entry : businessMap.entrySet()) {
                 String key = entry.getKey();
-                Object value = entry.getValue();
+                String value = entry.getValue();
                 argsList.add("-D" + key + "_rt=" + value);
             }
         }
@@ -288,14 +314,14 @@ public class JmeterPlugin implements PressurePlugin {
         //podnum
         String podNum = context.getPodCount() == 1 ? "1" : context.getPodNumber();
         //采样率 默认1 全部
-        String traceSampling = context.getTraceSampling();
+        Integer traceSampling = context.getTraceSampling();
 
         logger.info(" >>>>> 当前场景ID为[{}], 任务ID[{}], 采样率为[{}]", sceneId, reportId, traceSampling);
-        String[] args = new String[] {"-n", "-t", finalJmxFilePathName, " -l " + ptlPath,
-            "-j", jmeterLogFilePath, "-Duser.timezone=Asia/Shanghai", "-Djava.net.preferIPv4Stack=true"
-                , "-Djava.net.preferIPv4Addresses=true"
-                , "-Dengine.perssure.mode=" + context.getCurrentEnginePressureMode().getCode(),
-            "-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
+        String[] args = new String[] {"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
+            , "-j", jmeterLogFilePath, "-Duser.timezone=Asia/Shanghai", "-Djava.net.preferIPv4Stack=true"
+            , "-Djava.net.preferIPv4Addresses=true"
+            , "-Dengine.perssure.mode=" + context.getPressureScene().getCode()
+            ,"-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
             , "-DCustomerId=" + customerId, "-DCallbackUrl=" + context.getCloudCallbackUrl()
             , "-DSamplingInterval=" + traceSampling, portRule};
         //组装后端监听器参数
@@ -315,7 +341,11 @@ public class JmeterPlugin implements PressurePlugin {
     }
 
     private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args) {
-        Long timeout = context.getDuration();
+        Integer duration = context.getDuration();
+        Long timeout = null;
+        if (null != duration) {
+            timeout = duration.longValue();
+        }
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
         StringBuilder cmd = new StringBuilder();
         cmd.append("java");//jmeter

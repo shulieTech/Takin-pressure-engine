@@ -40,9 +40,9 @@ public final class GlobalUserVariables {
     @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_CUSTOMER_ID)
     private String customerId;
 
-    //引擎压测模式 0并发模式， 1TPS模式， 9自定义模式
-    @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_PRESSURE_MODE)
-    private String enginePressureMode;
+//    //引擎压测模式 0并发模式， 1TPS模式， 9自定义模式
+//    @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_PRESSURE_MODE)
+//    private String enginePressureMode;
 
     //cloud 回调地址
     @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_CLOUD_CALLBACK_URL)
@@ -108,13 +108,13 @@ public final class GlobalUserVariables {
         this.customerId = customerId;
     }
 
-    public String getEnginePressureMode() {
-        return enginePressureMode;
-    }
-
-    public void setEnginePressureMode(String enginePressureMode) {
-        this.enginePressureMode = enginePressureMode;
-    }
+//    public String getEnginePressureMode() {
+//        return enginePressureMode;
+//    }
+//
+//    public void setEnginePressureMode(String enginePressureMode) {
+//        this.enginePressureMode = enginePressureMode;
+//    }
 
     public String getTakinCloudCallbackUrl() {
         return takinCloudCallbackUrl;

@@ -22,7 +22,7 @@ import io.shulie.flpt.pressure.engine.common.Constants;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineNotifyParam;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
 import io.shulie.flpt.pressure.engine.util.FileUtils;
-import io.shulie.flpt.pressure.engine.util.JsonUtils;
+import io.shulie.flpt.pressure.engine.util.GsonUtils;
 import io.shulie.flpt.pressure.engine.util.StringUtils;
 import io.shulie.flpt.pressure.engine.util.TryUtils;
 import io.shulie.takin.constants.TakinRequestConstant;
@@ -47,13 +47,13 @@ public class HttpNotifyTakinCloudUtils {
 
     public static void notifyTakinCloud(EngineStatusEnum statusEnum, String errMsg) {
         String podNumber = System.getProperty("pod.number");
-        HttpUtils.doPost(url, JsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
+        HttpUtils.doPost(url, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
                 .podNum(podNumber == null ? "" : podNumber)
                 .status(
             statusEnum.getStatus()).msg(PRESSURE_ENGINE_EXCEPTION_PREFIX+errMsg).build()));
     }
     public static String getTakinCloud(EngineStatusEnum statusEnum) {
-       return HttpUtils.doPost(url, JsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId).status(
+       return HttpUtils.doPost(url, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId).status(
             statusEnum.getStatus()).build()));
     }
 
@@ -62,7 +62,7 @@ public class HttpNotifyTakinCloudUtils {
         String configurations = TryUtils.tryOperation(
             () -> FileUtils.readTextFileContent(new File(configurationsFile)));
         if (StringUtils.isNotBlank(configurations)) {
-            Map<String, Object> taskInfoMap = JsonUtils.json2Obj(configurations, Map.class);
+            Map<String, Object> taskInfoMap = GsonUtils.json2Obj(configurations, Map.class);
             url = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("takinCloudCallbackUrl")));
             // 用于获取
             sceneId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils

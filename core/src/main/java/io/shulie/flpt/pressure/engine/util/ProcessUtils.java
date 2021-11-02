@@ -83,7 +83,7 @@ public class ProcessUtils {
                 status = process.waitFor();
             } else {
                 if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
-                    throw new RuntimeException(String.format("Command run timeout, timeout: %s, command: %s", timeout, JsonUtils.obj2Json(commands)));
+                    throw new RuntimeException(String.format("Command run timeout, timeout: %s, command: %s", timeout, GsonUtils.obj2Json(commands)));
                 } else {
                     status = process.exitValue();
                 }
