@@ -50,7 +50,7 @@ public class PressureContext extends AbstractEntry {
     /**
      * 是否是新版，新版标识是压测场景有脚本解析的结果
      */
-    private boolean newVersion;
+    private boolean oldVersion;
     //运行时间
     private Integer duration;
     //引擎插件路径
@@ -69,7 +69,11 @@ public class PressureContext extends AbstractEntry {
     //metric上报数据url
     private String metricCollectorUrl;
     //额外参数，目前这里是记录业务活动对应的目标rt
-    private Map<String, String> businessMap;
+    private Map<String, BusinessActivityConfig> businessMap;
+    /**
+     * 是否通过xpath的md5进行关联，新老板区分
+     */
+    private Boolean bindByXpathMd5;
     //压测数据信息
     private List<Map<String, Object>> dataFileSets;
     //pod数量
@@ -107,8 +111,8 @@ public class PressureContext extends AbstractEntry {
     //请求头参数
     private HttpHeaderVariables httpHeaderVariables;
 
-    //业务活动信息
-    private List<BusinessActivity> businessActivities;
+//    //业务活动信息
+//    private List<BusinessActivity> businessActivities;
 
 //    //pod 的序号
 //    public String getPodNumber() {

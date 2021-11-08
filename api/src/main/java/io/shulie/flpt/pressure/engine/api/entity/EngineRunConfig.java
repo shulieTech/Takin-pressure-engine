@@ -30,12 +30,11 @@ public class EngineRunConfig extends AbstractEntry {
     /**
      * 脚本文件完整路径和文件名
      */
-    private String scriptPath;
+    private String scriptFile;
     /**
      * 脚本文件所在目录
      */
-    private String pressureEnginePathUrl;
-    private String extJarPath;
+    private String scriptFileDir;
     /**
      * 是否是在本地启动
      */
@@ -51,7 +50,7 @@ public class EngineRunConfig extends AbstractEntry {
     /**
      * 是否是新版，新版标识是压测场景有脚本解析的结果
      */
-    private Boolean newVersion;
+    private Boolean bindByXpathMd5;
     /**
      * 压测时长
      */
@@ -72,7 +71,13 @@ public class EngineRunConfig extends AbstractEntry {
      * 文件
      */
     private List<Map<String, Object>> fileSets;
-    private Map<String, String> businessMap;
+    /**
+     * 业务活动配置的目标信息
+     */
+    private Map<String, BusinessActivityConfig> businessMap;
+    /**
+     * 压测引起java虚拟机内存等参数配置
+     */
     private String memSetting;
 
 }

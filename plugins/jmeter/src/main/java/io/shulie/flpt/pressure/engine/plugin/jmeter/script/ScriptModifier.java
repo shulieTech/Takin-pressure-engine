@@ -32,11 +32,7 @@ import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.JmeterConstants;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.enums.NodeTypeEnum;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.*;
-import io.shulie.flpt.pressure.engine.util.GsonUtils;
-import io.shulie.flpt.pressure.engine.util.NumberUtils;
-import io.shulie.flpt.pressure.engine.util.StringUtils;
-import io.shulie.flpt.pressure.engine.util.SystemResourceUtil;
-import io.shulie.flpt.pressure.engine.util.TryUtils;
+import io.shulie.flpt.pressure.engine.util.*;
 import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
 import io.shulie.jmeter.tool.redis.RedisConfig;
 import io.shulie.jmeter.tool.redis.RedisUtil;
@@ -123,7 +119,7 @@ public class ScriptModifier {
         }
         forbidResultCollector(elements);
         //修改testname
-        if (context.isNewVersion()) {
+        if (!context.isOldVersion()) {
             modifyTestName(elements);
         }
 
@@ -267,8 +263,8 @@ public class ScriptModifier {
      * @param context               参数
      */
     public static void addConstantsThroughputControl(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
-        List<BusinessActivity> businessActivities = context.getBusinessActivities();
-        if (CollectionUtils.isEmpty(businessActivities)) {
+        Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
+        if (null == businessMap) {
             return;
         }
 
@@ -276,10 +272,10 @@ public class ScriptModifier {
         double tpsTargetLevel = null != config.getTpsTargetLevel() ? config.getTpsTargetLevel() : 0d;
         //目标增大因子（保证tps在目标之上）,默认0.1即增大10%
         double tpsTargetLevelFactor = null != config.getTpsTargetLevelFactor() ? config.getTpsTargetLevelFactor() : 0.1d;
-        //添加常量吞吐量控制器
-        // elementTestName对应的百分比
-        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(BusinessActivity::getElementTestName,BusinessActivity::getThroughputPercent));
+//        //添加常量吞吐量控制器
+//        // elementTestName对应的百分比
+//        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
+//                .collect(Collectors.toMap(BusinessActivity::getElementTestName,BusinessActivity::getThroughputPercent));
 
         Element hashTreeElement = DomUtils.findChildrenContainerElement(threadGroupElement);
         List<Element> elements = DomUtils.elements(hashTreeElement);
@@ -294,19 +290,14 @@ public class ScriptModifier {
                 continue;
             }
             String transcation = DomUtils.getTransaction(e);
-            String tpsStr = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
-            double tps = NumberUtils.parseDouble(tpsStr);
-
-            String percent = CommonUtil.getFromMap(businessActivityMap, transcation);
-            if (StringUtils.isBlank(percent)) {
-                return;
-            }
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
+            int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
             //当前业务活动tps占比
-            double throughputPercent = NumberUtils.parseDouble(percent)/100d;
+            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
             //求1分钟的并发数,1.1是原来的目标的基础上加10%
-            double throughput = tpsTargetLevel * 60 * throughputPercent;
+            double throughput = tpsTargetLevel * 60 * percent;
             //给每一个采样器添加常量吞吐量控制器
-            addEachConstantsThroughputControl(e, throughput, throughputPercent, tpsTargetLevelFactor);
+            addEachConstantsThroughputControl(e, throughput, percent, tpsTargetLevelFactor);
         }
     }
 
@@ -671,13 +662,13 @@ public class ScriptModifier {
      * @param context            参数信息
      */
     public static void addThroughputControl(Element threadGroupElement, PressureContext context) {
-        List<BusinessActivity> businessActivities = context.getBusinessActivities();
-        if (CollectionUtils.isEmpty(businessActivities)) {
+        Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
+        if (null == businessMap) {
             return;
         }
-        // elementTestName对应的百分比
-        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(BusinessActivity::getElementTestName, BusinessActivity::getThroughputPercent));
+//        // elementTestName对应的百分比
+//        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
+//                .collect(Collectors.toMap(BusinessActivity::getElementTestName, BusinessActivity::getThroughputPercent));
 
         Element hashTreeElement = DomUtils.findChildrenContainerElement(threadGroupElement);
         List<Element> elements = DomUtils.elements(hashTreeElement);
@@ -692,14 +683,10 @@ public class ScriptModifier {
                 continue;
             }
             String transcation = DomUtils.getTransaction(e);
-            String tpsStr = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
-            double tps = NumberUtils.parseDouble(tpsStr);
-
-            String percent = CommonUtil.getFromMap(businessActivityMap, transcation);
-            if (StringUtils.isBlank(percent)) {
-                return;
-            }
-            addEachThroughputControl(e, percent);
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(businessMap, transcation);
+            int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+            double percent =  CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
+            addEachThroughputControl(e, String.valueOf(percent*100));
         }
     }
 
@@ -1693,16 +1680,20 @@ public class ScriptModifier {
 
         Element stringProp132 = elementProp13.addElement("stringProp");
         stringProp132.addAttribute("name", "Argument.value");
-        Map<String, String> map = Maps.newHashMap();
-        if (context.getBusinessMap() != null) {
-            for (Map.Entry<String, String> entry : context.getBusinessMap().entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                //todo 写死rt,后续可以根据配置
-                map.put(key + "_rt", value);
-            }
-        }
-        stringProp132.setText(GsonUtils.obj2Json(map));
+//        Map<String, String> map = Maps.newHashMap();
+//        if (null != context.getBusinessMap()) {
+//            Map<String, Integer> mapmap = context.getBusinessMap().values().stream().filter(Objects::nonNull)
+//                    .filter(d -> null != d.getRt())
+//                    .collect(Collectors.toMap(BusinessActivityConfig::getBindRef, BusinessActivityConfig::getRt));
+//
+//            for (Map.Entry<String, BusinessActivityConfig> entry : context.getBusinessMap().entrySet()) {
+//                String key = entry.getKey();
+//                Integer value = entry.getValue().getRt();
+//                //todo 写死rt,后续可以根据配置
+//                map.put(key + "_rt", value);
+//            }
+//        }
+        stringProp132.setText(JsonUtils.toJson(context.getBusinessMap()));
         Element stringProp133 = elementProp13.addElement("stringProp");
         stringProp133.addAttribute("name", "Argument.metadata");
         stringProp133.setText("=");

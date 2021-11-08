@@ -20,6 +20,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.gson.internal.LinkedTreeMap;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
+import io.shulie.flpt.pressure.engine.api.entity.BusinessActivityConfig;
 import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
 import io.shulie.flpt.pressure.engine.api.entity.EnginePtlLogConfig;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
@@ -73,7 +74,7 @@ public class JmeterPlugin implements PressurePlugin {
         String backend_listener_report_id_Value = String.valueOf(context.getReportId());
         // 新增 客户id 一定有
         String backend_listener_customer_id_Value = String.valueOf(context.getCustomerId());
-        Map<String, String> businessMap = context.getBusinessMap();
+        Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
 //        Map<String, Object> businessMap = TryUtils.tryOperation(() -> (Map<String, Object>)params.get("businessMap"));
         if (backend_listener_scene_id_Value != null && !backend_listener_scene_id_Value.equals("null")) {
             argsList.add("-Dbackend_listener_scene_id=" + backend_listener_scene_id_Value);
@@ -135,13 +136,13 @@ public class JmeterPlugin implements PressurePlugin {
 //            argsList.add("-DengineRedisPassword=" + enginePressureParams.get("engineRedisPassword"));
 //        }
 
-        if (businessMap != null) {
-            for (Map.Entry<String, String> entry : businessMap.entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                argsList.add("-D" + key + "_rt=" + value);
-            }
-        }
+//        if (businessMap != null) {
+//            for (Map.Entry<String, String> entry : businessMap.entrySet()) {
+//                String key = entry.getKey();
+//                String value = entry.getValue();
+//                argsList.add("-D" + key + "_rt=" + value);
+//            }
+//        }
         String[] args = new String[argsList.size()];
         for (int i = 0; i < argsList.size(); i++) {
             args[i] = argsList.get(i);

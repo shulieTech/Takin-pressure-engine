@@ -335,14 +335,14 @@ public class Bootstrap {
         context.setCustomerId(customerId);
         context.setMemSetting(config.getMemSetting());
         context.setMetricCollectorUrl(metricCollectorUrl);
-        context.setLogDir(config.getPressureEnginePathUrl());
+        context.setLogDir(config.getScriptFileDir());
         if (StringUtils.isBlank(context.getLogDir())) {
             context.setLogDir(StringUtils.formatStr(Constants.PRESSURE_LOG_DIR));
         }
 
         String taskDir = StringUtils.formatStr(Constants.PRESSURE_TASK_DIR);
         //压测引擎log路径
-        String logDir = config.getPressureEnginePathUrl();
+        String logDir = config.getScriptFileDir();
         if(StringUtils.isBlank(logDir)) {
             logDir = StringUtils.formatStr(Constants.PRESSURE_LOG_DIR);
         }
@@ -361,10 +361,10 @@ public class Bootstrap {
         context.setResourcesDir(taskDir + "resources");
 
         //脚本路径
-        context.setScriptPath(config.getScriptPath());
+        context.setScriptPath(config.getScriptFile());
         //获取引擎插件路径
         context.setEnginePluginsFilePath(config.getEnginePluginsFiles());
-        context.setNewVersion(BooleanUtils.isTrue(config.getNewVersion()));
+        context.setOldVersion(BooleanUtils.isFalse(config.getBindByXpathMd5()));
         //引擎压力模式
         Integer pressureScene = config.getPressureScene();
         context.setEnginePressureMode(pressureScene);
@@ -382,7 +382,9 @@ public class Bootstrap {
         context.setDuration(config.getContinuedTime());
         //目标期望值
         context.setExpectThroughput(config.getExpectThroughput());
+        //业务活动目标配置
         context.setBusinessMap(config.getBusinessMap());
+        context.setBindByXpathMd5(config.getBindByXpathMd5());
         //数据文件集合
         context.setDataFileSets(config.getFileSets());
         //podCount
@@ -539,16 +541,16 @@ public class Bootstrap {
         //header需要透传rpcid  目前为0
         httpHeaderVariables.setPradarRpcId("0");
         context.setHttpHeaderVariables(httpHeaderVariables);
-        //业务活动信息
-        //处理业务活动
-        List<Map<String, String>> businessActivities = pressureConfig.getBusinessActivities();
-        List<BusinessActivity> listBusinessActivities = new ArrayList<>();
-        if(businessActivities != null && businessActivities.size() > 0) {
-            for(Map<String, String> map : businessActivities) {
-                listBusinessActivities.add(BusinessActivity.build(map.get("elementTestName"), map.get("throughputPercent")));
-            }
-        }
-        context.setBusinessActivities(listBusinessActivities);
+//        //业务活动信息
+//        //处理业务活动
+//        List<Map<String, String>> businessActivities = pressureConfig.getBusinessActivities();
+//        List<BusinessActivity> listBusinessActivities = new ArrayList<>();
+//        if(businessActivities != null && businessActivities.size() > 0) {
+//            for(Map<String, String> map : businessActivities) {
+//                listBusinessActivities.add(BusinessActivity.build(map.get("elementTestName"), map.get("throughputPercent")));
+//            }
+//        }
+//        context.setBusinessActivities(listBusinessActivities);
         //后端监听器对列长度
         String pressureEngineBackendQueueCapacity = pressureConfig.getPressureEngineBackendQueueCapacity();
 //        String pressureEngineBackendQueueCapacity = String.valueOf(enginePressureParams
