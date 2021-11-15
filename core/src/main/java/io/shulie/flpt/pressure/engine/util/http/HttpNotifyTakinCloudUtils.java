@@ -15,17 +15,13 @@
 
 package io.shulie.flpt.pressure.engine.util.http;
 
-import java.io.File;
-import java.util.Map;
+import java.util.Objects;
 
+import io.shulie.flpt.pressure.engine.api.entity.EngineRunConfig;
 import io.shulie.flpt.pressure.engine.common.Constants;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineNotifyParam;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
-import io.shulie.flpt.pressure.engine.util.FileUtils;
 import io.shulie.flpt.pressure.engine.util.GsonUtils;
-import io.shulie.flpt.pressure.engine.util.StringUtils;
-import io.shulie.flpt.pressure.engine.util.TryUtils;
-import io.shulie.takin.constants.TakinRequestConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,21 +53,12 @@ public class HttpNotifyTakinCloudUtils {
             statusEnum.getStatus()).build()));
     }
 
-    public static void init() {
-        String configurationsFile = System.getProperty("configurations");
-        String configurations = TryUtils.tryOperation(
-            () -> FileUtils.readTextFileContent(new File(configurationsFile)));
-        if (StringUtils.isNotBlank(configurations)) {
-            Map<String, Object> taskInfoMap = GsonUtils.json2Obj(configurations, Map.class);
-            url = TryUtils.tryOperation(() -> String.valueOf(taskInfoMap.get("takinCloudCallbackUrl")));
-            // 用于获取
-            sceneId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
-                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_SCENE_HEADER_VALUE)))));
-            reportId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
-                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_TASK_HEADER_VALUE)))));
-            customerId = TryUtils.tryOperation(() -> Long.parseLong(StringUtils
-                .removePoint(String.valueOf(taskInfoMap.get(TakinRequestConstant.CLUSTER_TEST_CUSTOMER_HEADER_VALUE)))));
-
+    public static void init(EngineRunConfig config) {
+        if (Objects.nonNull(config)) {
+            url = config.getCallbackUrl();
+            sceneId = config.getSceneId();
+            reportId = config.getTaskId();
+            customerId = config.getCustomerId();
         } else {
             url = Constants.TAKIN_TRO_URL;
             sceneId = 0L;

@@ -42,7 +42,7 @@ public class EnginePressureConfig extends AbstractEntry {
     /**
      * 循环次数
      */
-    private Integer loopsNum;
+    private Long loopsNum;
     /**
      * 采样率
      */
