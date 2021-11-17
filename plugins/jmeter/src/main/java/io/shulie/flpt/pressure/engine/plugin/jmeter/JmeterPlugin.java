@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -101,7 +102,7 @@ public class JmeterPlugin implements PressurePlugin {
             //设置上传队列大小
             argsList.add("-DlogQueueSize=" + enginePressureParams.get("logQueueSize"));
             argsList.add("-DzkServers=" + enginePressureParams.get("zkServers"));
-            
+
             argsList.add("-DengineRedisAddress=" + enginePressureParams.get("engineRedisAddress"));
             argsList.add("-DengineRedisPort=" + enginePressureParams.get("engineRedisPort"));
             argsList.add("-DengineRedisSentinelNodes=" + enginePressureParams.get("engineRedisSentinelNodes"));
@@ -294,6 +295,18 @@ public class JmeterPlugin implements PressurePlugin {
             "-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
             , "-DCustomerId=" + customerId, "-DCallbackUrl=" + context.getCloudCallbackUrl()
             , "-DSamplingInterval=" + traceSampling, portRule};
+        // 系统变量
+        Map<String, String> property = new HashMap<>();
+        property.put("user.timezone", "Asia/Shanghai");
+        property.put("java.net.preferIPv4Stack", "true");
+        property.put("java.net.preferIPv4Addresses", "true");
+        property.put("engine.perssure.mode", context.getCurrentEnginePressureMode().getCode());
+        property.put("pod.number", podNum);
+        property.put("SceneId", sceneId);
+        property.put("ReportId", reportId);
+        property.put("CustomerId", customerId);
+        property.put("CallbackUrl", context.getCloudCallbackUrl());
+        property.put("SamplingInterval", traceSampling);
         //组装后端监听器参数
         args = metricArgsProcess(context, args);
         String startMode = context.getStartMode();
@@ -302,7 +315,7 @@ public class JmeterPlugin implements PressurePlugin {
         } else {
             Boolean jmeterDebug = TryUtils.tryOperation(() -> System.getProperty("jmeter.debug") == null ? false
                     : Boolean.parseBoolean(System.getProperty("jmeter.debug")));
-            startNewJmeterProcess(context, jmeterDebug, args);
+            startNewJmeterProcess(context, jmeterDebug, args, property);
         }
     }
 
@@ -310,7 +323,7 @@ public class JmeterPlugin implements PressurePlugin {
         JmeterRunner.run(context, args);
     }
 
-    private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args) {
+    private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args, Map<String, String> property) {
         Long timeout = context.getDuration();
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
         StringBuilder cmd = new StringBuilder();
@@ -322,6 +335,10 @@ public class JmeterPlugin implements PressurePlugin {
             cmd.append(" ");
             cmd.append(context.getMemSetting());
         }
+        property.forEach((k,v)->{
+            cmd.append(" ").append("-D").append(k)
+                .append("=").append(v);
+        });
         cmd.append(" -jar ApacheJMeter.jar");
         for (String arg : args) {
             cmd.append(" ");
