@@ -180,6 +180,7 @@ public class ScriptModifier {
         // 添加全局参数 add by lipeng
         // 全局参数只用添加一个，均可获取到
         if (!globalArgumentsAdded) {
+
             addGlobalArguments(testPlanContainer, context.getGlobalUserVariables(), pressureScene);
             // add by lipeng  添加traceId生成和添加到http header
             // 全局参数只用添加一个，均可获取到
@@ -582,12 +583,13 @@ public class ScriptModifier {
             GlobalParamKey anno = declaredField.getAnnotation(GlobalParamKey.class);
             //未标注GlobalParamKey的字段不作处理
             if (null == anno) {
+                logger.info("GlobalParamKey is null ,fieldname:" + declaredField.getName());
                 continue;
             }
             //校验是否专属参数
             PressureSceneEnum[] assignForModes = anno.assignForMode();
             //只有指定了专属参数属性才进行校验
-            if (!CommonUtil.contains(assignForModes, pressureSceneEnum)) {
+            if (Objects.nonNull(assignForModes) && assignForModes.length>0 && !CommonUtil.contains(assignForModes, pressureSceneEnum)) {
                 continue;
             }
 

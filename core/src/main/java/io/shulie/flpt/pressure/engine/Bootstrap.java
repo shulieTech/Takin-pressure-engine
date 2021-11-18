@@ -189,6 +189,7 @@ public class Bootstrap {
         try {
             pressurePlugin.doResolvePressureData(context, context.getDataFileSets());
         } catch(Exception e) {
+            logger.error("处理文件读取位置异常，异常信息：{}",e.toString());
             logger.warn("Pressure doResolvePressureData failed.");
         }
 
