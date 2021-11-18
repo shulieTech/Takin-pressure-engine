@@ -122,6 +122,8 @@ public class ScriptModifier {
         if (!context.isOldVersion()) {
             modifyTestName(elements);
         }
+        //修改控制器属性，防止取样器不上报和
+        modifyControllerProp(elements);
 
         // *********************************TestPlan********************************
         List<Element> testPlanElements = DomUtils.elements(rootConTainer, "TestPlan");
@@ -1982,6 +1984,72 @@ public class ScriptModifier {
         String xpath = element.getUniquePath();
         String xpathMd5 = Md5Util.md5(xpath);
         element.addAttribute("testname", testName + EngineConstants.TEST_NAME_MD5_SPLIT + xpathMd5);
+    }
+
+    /**
+     * 修改控制器属性
+     */
+    private static void modifyControllerProp(List<Element> elements) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return;
+        }
+        for (Element element : elements) {
+            NodeTypeEnum type = NodeTypeEnum.value(element.getName());
+            if (null == type) {
+                modifyControllerProp(DomUtils.elements(element));
+                continue;
+            }
+            switch (type) {
+                case CONTROLLER:
+                    modifyControllerProp(element);
+                    modifyControllerProp(DomUtils.elements(element));
+                    break;
+                case SAMPLER:
+                    break;
+                default:
+                    modifyControllerProp(DomUtils.elements(element));
+                    break;
+            }
+        }
+    }
+
+    private static void modifyControllerProp(Element element) {
+        if (null == element) {
+            return;
+        }
+        String name = element.getName();
+        if ("TransactionController".equals(name)) {
+            //逻辑事务控制器
+            List<Element> propElements = DomUtils.elements(element);
+            if (CollectionUtils.isNotEmpty(propElements)) {
+                for (Element p : propElements) {
+                    Attribute attr = p.attribute("name");
+                    //Generate parent sample 设置为false；Include duriation of timer and pre-post processor in generated sample 设置为false
+                    if ("TransactionController.includeTimers".equals(attr.getValue()) || "TransactionController.parent".equals(attr.getValue())) {
+                        p.setText("false");
+                    }
+                }
+            }
+        } else if ("LoopController".equals(name)) {
+            //循环控制器
+            List<Element> propElements = DomUtils.elements(element);
+            if (CollectionUtils.isNotEmpty(propElements)) {
+                for (Element p : propElements) {
+                    Attribute attr = p.attribute("name");
+                    //循环控制器 不勾选永远循环，循环次数默认1次，最大100次
+                    if ("LoopController.continue_forever".equals(attr.getValue())) {
+                        p.setText("false");
+                    } else if ("LoopController.loops".equals(attr.getValue())) {
+                        int loops = NumberUtils.parseInt(p.getText());
+                        if  (loops <= 0) {
+                            p.setText("1");
+                        } else if (loops > 100) {
+                            p.setText("100");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
