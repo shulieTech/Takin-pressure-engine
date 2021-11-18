@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import com.google.gson.internal.LinkedTreeMap;
@@ -427,13 +428,19 @@ public class JmeterPlugin implements PressurePlugin {
                 String fileName = csvConfig.get("name").toString();
                 if (obj != null) {
                     Map<Integer, Object> pairMap = (Map<Integer, Object>)obj;
-                    Object o = pairMap.get(String.valueOf(podIndex - 1));
-                    if (o instanceof List) {
-                        ArrayList<Map<String, String>> positionList = (ArrayList<Map<String, String>>)o;
-                        if (!positionList.isEmpty()) {
-                            Map<String, String> positionMap = positionList.get(0);
-                            variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
+                    Object o = pairMap.get(podIndex - 1);
+                    logger.info("获取到文件读取位置信息：{}",o.toString());
+                    if (o instanceof JSONArray) {
+                        JSONArray jsonArray = (JSONArray)o;
+                        if (!jsonArray.isEmpty()){
+                            JSONObject position = jsonArray.getJSONObject(0);
+                            variablesJson.put(fileName,position.toJSONString());
                         }
+                        //ArrayList<Map<String, String>> positionList = (ArrayList<Map<String, String>>)o;
+                        //if (!positionList.isEmpty()) {
+                        //    Map<String, String> positionMap = positionList.get(0);
+                        //    variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
+                        //}
                     }
                     //兼容之前的分片数据
                     else if (o instanceof Map) {

@@ -48,13 +48,6 @@ public final class GlobalUserVariables {
     @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_CLOUD_CALLBACK_URL)
     private String takinCloudCallbackUrl;
 
-    //引擎读取csv文件开始位置
-    @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_CSV_FILE_START_POSITION)
-    private String engineCsvFilePositionStart;
-
-    //引擎读取csv文件结束位置
-    @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_CSV_FILE_STOP_POSITION)
-    private String engineCsvFilePositionEnd;
 
     //引擎读取csv文件位点信息
     @GlobalParamKey(EngineConstants.GLOBAL_PARAM_KEY_POSITION_ALL)
@@ -66,22 +59,6 @@ public final class GlobalUserVariables {
 
     public void setGlobalVariablesMap(String globalVariablesMap) {
         this.globalVariablesMap = globalVariablesMap;
-    }
-
-    public String getEngineCsvFilePositionStart() {
-        return engineCsvFilePositionStart;
-    }
-
-    public void setEngineCsvFilePositionStart(String engineCsvFilePositionStart) {
-        this.engineCsvFilePositionStart = engineCsvFilePositionStart;
-    }
-
-    public String getEngineCsvFilePositionEnd() {
-        return engineCsvFilePositionEnd;
-    }
-
-    public void setEngineCsvFilePositionEnd(String engineCsvFilePositionEnd) {
-        this.engineCsvFilePositionEnd = engineCsvFilePositionEnd;
     }
 
     public String getSceneId() {
