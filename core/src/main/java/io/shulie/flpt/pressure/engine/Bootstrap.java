@@ -91,6 +91,7 @@ public class Bootstrap {
         if (workDir == null || workDir.isEmpty()) {
             workDir = System.getProperty("user.dir");
         }
+        logger.info("workDir="+workDir);
         engineType = System.getProperty("engine.type");
 
 

@@ -270,9 +270,6 @@ public class ScriptModifier {
         if (null == businessMap) {
             return;
         }
-
-        //总的目标tps
-        double tpsTargetLevel = null != config.getTpsTargetLevel() ? config.getTpsTargetLevel() : 0d;
         //目标增大因子（保证tps在目标之上）,默认0.1即增大10%
         double tpsTargetLevelFactor = null != config.getTpsTargetLevelFactor() ? config.getTpsTargetLevelFactor() : 0.1d;
 //        //添加常量吞吐量控制器
@@ -285,24 +282,44 @@ public class ScriptModifier {
         if (CollectionUtils.isEmpty(elements)) {
             return;
         }
+        String transcation = DomUtils.getTransaction(threadGroupElement);
+        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
+        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
+    }
 
+    public static void addConstantsThroughputControl(List<Element> elements, PressureContext context, double factor) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return;
+        }
         for (Element e : elements) {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
             if (null == type || type != NodeTypeEnum.SAMPLER) {
+                addConstantsThroughputControl(DomUtils.elements(e), context, factor);
                 continue;
             }
             String transcation = DomUtils.getTransaction(e);
             BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
             int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+            double podTps = (double) tps;
+            if (null != context.getPodCount() && context.getPodCount() > 0) {
+                podTps = podTps / context.getPodCount();
+            }
             //当前业务活动tps占比
             double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
-            //求1分钟的并发数,1.1是原来的目标的基础上加10%
-            double throughput = tpsTargetLevel * 60 * percent;
+            //求1分钟的并发数,
+            double throughput = podTps*60;
+            //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+            if (factor > 5) {
+                throughput += factor;
+            } else {
+                throughput *= (1+factor);
+            }
             //给每一个采样器添加常量吞吐量控制器
-            addEachConstantsThroughputControl(e, throughput, percent, tpsTargetLevelFactor);
+            addEachConstantsThroughputControl(e, throughput, percent, factor);
         }
     }
+
 
     /**
      * 给每一个sampleElement添加常量吞吐量定时器
@@ -1127,6 +1144,9 @@ public class ScriptModifier {
             return;
         }
         ThreadGroupTypeEnum type = ThreadGroupTypeEnum.value(threadGroupConfig.getType());
+        if (null == type) {
+            return;
+        }
         switch (type) {
             case TPS:
                 modifyDefaultTpsThreadGroup(threadGroupElement, context, config, threadGroupConfig);
