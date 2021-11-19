@@ -123,7 +123,8 @@ elif [[ ${FOREGROUND} == 1 ]]; then
     echo "CMD: java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS}"
     java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS}
 else
-    echo "CMD: nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /dev/null 2>&1 &"
+#    echo "CMD: nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /dev/null 2>&1 &"
 #    nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /dev/null 2>&1 &
-    nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> $LOG_DIR/presssure_engine.log 2>&1 &
+    echo "CMD: nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /etc/engine/script/logs/presssure_engine.log 2>&1 &"
+    nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /etc/engine/script/logs/presssure_engine.log 2>&1 &
 fi
