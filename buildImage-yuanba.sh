@@ -75,6 +75,7 @@ sleep 2
 #清空jmeter日志
 echo "" > $JMETER_SOURCE_PATH/bin/jmeter.log
 cd $JMETER_SOURCE_PATH
+git pull
 $GRADLE_HOME/bin/gradle src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test
 $GRADLE_HOME/bin/gradle src:dist:createDist
 
@@ -106,6 +107,7 @@ rm -rf .*
 log ' >>> 打包，上传.. <<< '
 sleep 2
 cd $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter
+git pull
 #mvn clean deploy -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
 mvn clean install -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
 #打包上传后移除jmeter

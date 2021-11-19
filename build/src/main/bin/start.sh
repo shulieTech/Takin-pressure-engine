@@ -124,5 +124,6 @@ elif [[ ${FOREGROUND} == 1 ]]; then
     java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS}
 else
     echo "CMD: nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /dev/null 2>&1 &"
-    nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /dev/null 2>&1 &
+#    nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /dev/null 2>&1 &
+    nohup java ${JAVA_OPTS} -classpath ${CLASSPATH} ${MAIN_CLASS} >> /data/nfs_dir/presssure_engine.log 2>&1 &
 fi
