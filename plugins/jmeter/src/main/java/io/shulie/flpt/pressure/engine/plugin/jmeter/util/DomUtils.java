@@ -50,7 +50,7 @@ public abstract class DomUtils {
      * 找当前节点下的所有子节点和子节点的子节点
      */
     public static List<Element> findAllChildElement(Element element) {
-        return findAllChildElement(elements(element));
+        return findAllChildElement(Lists.newArrayList(element));
     }
 
     /**
