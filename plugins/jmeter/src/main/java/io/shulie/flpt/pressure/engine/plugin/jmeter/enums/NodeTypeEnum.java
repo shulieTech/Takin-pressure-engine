@@ -59,4 +59,12 @@ public enum NodeTypeEnum {
         }
         return null;
     }
+
+    public boolean equals(String name) {
+        NodeTypeEnum type = NodeTypeEnum.value(name);
+        if (null == type) {
+            return false;
+        }
+        return type == this;
+    }
 }

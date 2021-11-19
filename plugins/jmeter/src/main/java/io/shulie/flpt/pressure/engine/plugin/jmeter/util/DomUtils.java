@@ -29,14 +29,12 @@ import org.dom4j.io.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.geom.FlatteningPathIterator;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Dom
@@ -47,6 +45,36 @@ import java.util.Map;
 public abstract class DomUtils {
 
     private static Logger logger = LoggerFactory.getLogger(DomUtils.class);
+
+    /**
+     * 找当前节点下的所有子节点和子节点的子节点
+     */
+    public static List<Element> findAllChildElement(Element element) {
+        return findAllChildElement(elements(element));
+    }
+
+    /**
+     * 找当前节点下的所有子节点和子节点的子节点
+     */
+    public static List<Element> findAllChildElement(List<Element> elements) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return null;
+        }
+        List<Element> children = elements.stream().filter(Objects::nonNull)
+                .map(DomUtils::findChildrenContainerElement)
+                .filter(Objects::nonNull)
+                .map(DomUtils::elements)
+                .filter(CollectionUtils::isNotEmpty)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(children)) {
+            List<Element> shunzi = findAllChildElement(children);
+            if (CollectionUtils.isNotEmpty(shunzi)) {
+                children.addAll(shunzi);
+            }
+        }
+        return children;
+    }
 
     /**
      * 从元素中获取唯一标识，老版本是testname，新版是testname中的MD5

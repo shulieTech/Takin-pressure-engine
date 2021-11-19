@@ -43,6 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -362,7 +364,7 @@ public class ScriptModifier {
         constantThroughputTimer.addAttribute("testname", getSampleThroughputControllerTestname(testName));
         constantThroughputTimer.addAttribute("enabled", "true");
 
-        DomUtils.addBasePropElement(constantThroughputTimer, "calcMode", 3);
+        DomUtils.addBasePropElement(constantThroughputTimer, "calcMode", 4);
         DomUtils.addBasePropElement(constantThroughputTimer, "throughput", throughput);
         if (null != throughputPercent) {
             DomUtils.addBasePropElement(constantThroughputTimer, "percent", throughputPercent);
@@ -1079,12 +1081,13 @@ public class ScriptModifier {
      * @param steps
      * @param holdTime
      */
-    private static void rebuildCommonThreadGroupSubElements(Element threadGroupElement, Integer rampUp, Integer steps, Integer holdTime) {
+    private static void rebuildCommonThreadGroupSubElements(Element threadGroupElement, String threadNum, Integer rampUp, Integer steps, Integer holdTime) {
         threadGroupElement.addElement("elementProp")
             .addAttribute("name", "ThreadGroup.main_controller")
             .addAttribute("elementType", "com.blazemeter.jmeter.control.VirtualUserController");
 
         DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.on_sample_error", "continue");
+        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", threadNum);
         DomUtils.addBasePropElement(threadGroupElement, "RampUp", StringUtils.valueOf(rampUp));
         DomUtils.addBasePropElement(threadGroupElement, "Steps", StringUtils.valueOf(steps));
         DomUtils.addBasePropElement(threadGroupElement, "Hold", StringUtils.valueOf(holdTime));
@@ -1184,9 +1187,9 @@ public class ScriptModifier {
         //将其下方内容清空
         threadGroupElement.clearContent();
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, rampUp, steps, holdTime);
-        //添加目标值
-        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(targetLevel));
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(targetLevel), rampUp, steps, holdTime);
+//        //添加目标值
+//        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(targetLevel));
     }
 
     /**
@@ -1234,13 +1237,13 @@ public class ScriptModifier {
         //将其下方内容清空
         threadGroupElement.clearContent();
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, rampUp, steps, holdTime);
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(tpsTargetLevel), rampUp, steps, holdTime);
         //添加限制并发数 这里不需要限制
         //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
         DomUtils.addBasePropElement(threadGroupElement, "ConcurrencyLimit", Constants.TPS_MODE_CONCURRENCY_LIMIT);
 
-        //添加目标值，这里的值只是在脚本里显示，真实值会从redis取
-        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(tpsTargetLevel));
+//        //添加目标值，这里的值只是在脚本里显示，真实值会从redis取
+//        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(tpsTargetLevel));
     }
 
     /**
@@ -1248,9 +1251,42 @@ public class ScriptModifier {
      */
     private static void modifyDefaultTps0ThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
         //采用阶梯递增模式，起始并发为tps数，每2秒递增1次
-        int maxThreadNum = CommonUtil.getValue(0, config, EnginePressureConfig::getMaxThreadNum);
-        if (maxThreadNum <= 0) {
-            maxThreadNum = SystemResourceUtil.getMaxThreadNum();
+        int threadNum = CommonUtil.getValue(0, tgConfig, ThreadGroupConfig::getThreadNum);
+        if (threadNum <= 0) {
+            int maxThreadNum = CommonUtil.getValue(0, config, EnginePressureConfig::getMaxThreadNum);
+            if (maxThreadNum <= 0) {
+                maxThreadNum = SystemResourceUtil.getMaxThreadNum();
+            }
+            Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
+            if (null != businessMap) {
+                //按tps目标比例计算最大线程数
+                int totalTps = businessMap.values().stream().filter(Objects::nonNull)
+                        .map(BusinessActivityConfig::getTps)
+                        .filter(Objects::nonNull)
+                        .mapToInt(d -> d)
+                        .sum();
+                List<Element> children = DomUtils.findAllChildElement(threadGroupElement);
+                int tps = 1;
+                if (CollectionUtils.isNotEmpty(children)) {
+                    tps = children.stream().filter(Objects::nonNull)
+                            .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
+                            .map(DomUtils::getTransaction)
+                            .filter(StringUtils::isNotBlank)
+                            .map(businessMap::get)
+                            .filter(Objects::nonNull)
+                            .map(BusinessActivityConfig::getTps)
+                            .filter(Objects::nonNull)
+                            .mapToInt(d -> d)
+                            .sum();
+                }
+                threadNum = BigDecimal.valueOf(tps)
+                        .divide(BigDecimal.valueOf(totalTps <= 0 ? 1 : totalTps), 10, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(maxThreadNum))
+                        .setScale(0, RoundingMode.CEILING)
+                        .intValue();
+            } else {
+                threadNum = maxThreadNum;
+            }
         }
         double tpsTargetLevel = CommonUtil.getValue(0d, config, EnginePressureConfig::getTpsTargetLevel);
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
@@ -1265,7 +1301,7 @@ public class ScriptModifier {
             rampUp = 0;
         }
         if (tpsTargetLevel > 0) {
-            steps = (int)Math.ceil(maxThreadNum / tpsTargetLevel);
+            steps = (int)Math.ceil(threadNum / tpsTargetLevel);
             rampUp = (int)Math.floor(steps * 1.2);
         }
 
@@ -1278,8 +1314,8 @@ public class ScriptModifier {
         threadGroupElement.clearContent();
 
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, rampUp, steps, holdTime);
-        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(maxThreadNum));
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(threadNum), rampUp, steps, holdTime);
+//        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(maxThreadNum));
     }
 
     /**
