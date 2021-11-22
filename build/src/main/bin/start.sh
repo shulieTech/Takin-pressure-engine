@@ -22,7 +22,8 @@ BEGIN_TIME=`date "+%Y-%m-%d %H:%M:%S"`
 source /etc/profile
 
 CURRENT_DIR=$(cd "$(dirname "$0")"; pwd)
-BASE_DIR=$(cd "$(dirname "$0")/.."; pwd)
+#BASE_DIR=$(cd "$(dirname "$0")/.."; pwd)
+BASE_DIR="/etc/engine/script"
 CURRENT_USER=`whoami`
 
 CONFIGURATIONS=""
