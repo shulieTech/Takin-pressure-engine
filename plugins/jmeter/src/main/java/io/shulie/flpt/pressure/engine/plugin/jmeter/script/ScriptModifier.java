@@ -140,8 +140,10 @@ public class ScriptModifier {
         // *********************************TestPlan********************************
         // 第二层:testPlan的hashTree,与testPlan平级
         List<Element> hashTree2Elements = DomUtils.elements(rootConTainer, "hashTree");
-        if (CollectionUtils.isEmpty(hashTree2Elements) || hashTree2Elements.size() > 1) {
-            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan hashTree or too many TestPlan hashTree!");
+//        if (CollectionUtils.isEmpty(hashTree2Elements) || hashTree2Elements.size() > 1) {
+//            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan hashTree or too many TestPlan hashTree!");
+        if (CollectionUtils.isEmpty(hashTree2Elements)) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan hashTree!");
             return false;
         }
         //testPlan的hashTree，与testPlan平级
