@@ -319,30 +319,31 @@ public class JmeterPlugin implements PressurePlugin {
         Integer traceSampling = context.getTraceSampling();
 
         logger.info(" >>>>> 当前场景ID为[{}], 任务ID[{}], 采样率为[{}]", sceneId, reportId, traceSampling);
-        String[] args = new String[] {"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
-            , "-j", jmeterLogFilePath, "-Duser.timezone=Asia/Shanghai", "-Djava.net.preferIPv4Stack=true"
+        String[] args = new String[] { "-Duser.timezone=Asia/Shanghai", "-Djava.net.preferIPv4Stack=true"
             , "-Djava.net.preferIPv4Addresses=true"
             , "-Dengine.perssure.mode=" + context.getPressureScene().getCode()
             ,"-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
             , "-DCustomerId=" + customerId, "-DCallbackUrl=" + context.getCloudCallbackUrl()
-            , "-DSamplingInterval=" + traceSampling, portRule};
+            , "-DSamplingInterval=" + traceSampling};
+        String[] jmeterParam = new String[]{"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
+                , "-j", jmeterLogFilePath, portRule};
         //组装后端监听器参数
         args = metricArgsProcess(context, args);
         String startMode = context.getStartMode();
         if (startMode != null && startMode.equalsIgnoreCase("single")) {
-            startInCurrentProcess(context, args);
+            startInCurrentProcess(context, args ,jmeterParam);
         } else {
             Boolean jmeterDebug = TryUtils.tryOperation(() -> System.getProperty("jmeter.debug") == null ? false
                     : Boolean.parseBoolean(System.getProperty("jmeter.debug")));
-            startNewJmeterProcess(context, jmeterDebug, args);
+            startNewJmeterProcess(context, jmeterDebug, args, jmeterParam);
         }
     }
 
-    private void startInCurrentProcess(PressureContext context, String[] args) {
+    private void startInCurrentProcess(PressureContext context, String[] args,String[] jmeterParam) {
         JmeterRunner.run(context, args);
     }
 
-    private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args) {
+    private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args,String[] jmeterParam) {
         Integer duration = context.getDuration();
         Long timeout = null;
         if (null != duration) {
@@ -358,8 +359,12 @@ public class JmeterPlugin implements PressurePlugin {
             cmd.append(" ");
             cmd.append(context.getMemSetting());
         }
-        cmd.append(" -jar ApacheJMeter.jar");
         for (String arg : args) {
+            cmd.append(" ");
+            cmd.append(arg);
+        }
+        cmd.append(" -jar ApacheJMeter.jar");
+        for (String arg : jmeterParam){
             cmd.append(" ");
             cmd.append(arg);
         }
