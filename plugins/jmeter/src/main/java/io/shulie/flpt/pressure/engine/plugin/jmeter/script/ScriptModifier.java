@@ -2080,16 +2080,17 @@ public class ScriptModifier {
         String name = element.getName();
         if ("TransactionController".equals(name)) {
             //逻辑事务控制器
-            List<Element> propElements = DomUtils.elements(element);
-            if (CollectionUtils.isNotEmpty(propElements)) {
-                for (Element p : propElements) {
-                    Attribute attr = p.attribute("name");
-                    //Generate parent sample 设置为false；Include duriation of timer and pre-post processor in generated sample 设置为false
-                    if ("TransactionController.includeTimers".equals(attr.getValue()) || "TransactionController.parent".equals(attr.getValue())) {
-                        p.setText("false");
-                    }
-                }
-            }
+            //勾选Generate parent sample也能拿到取样器的数据，因此可以不修改脚本，以免其他问题产生
+//            List<Element> propElements = DomUtils.elements(element);
+//            if (CollectionUtils.isNotEmpty(propElements)) {
+//                for (Element p : propElements) {
+//                    Attribute attr = p.attribute("name");
+//                    //Generate parent sample 设置为false；Include duriation of timer and pre-post processor in generated sample 设置为false
+//                    if ("TransactionController.includeTimers".equals(attr.getValue()) || "TransactionController.parent".equals(attr.getValue())) {
+//                        p.setText("false");
+//                    }
+//                }
+//            }
         } else if ("LoopController".equals(name)) {
             //循环控制器
             List<Element> propElements = DomUtils.elements(element);
