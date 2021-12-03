@@ -22,17 +22,7 @@
 # 1. 运行此脚本前请确保docker处于运行状态
 # 2. 运行此脚本前如果涉及maven版本号需要修改，需要自行在POM中修改.
 #默认镜像TAG -t参数可以修改TAG
-IMAGE_TAG="latest"
-
-#自定义参数 （以下变量需要根据自己实际情况进行修改）
-#JMETER源码路径
-#JMETER_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-jmeter
-#Gradle目录
-#GRADLE_HOME=/Users/shulie/Documents/gradle-6.6
-#Maven settings文件路径
-#MAVEN_SETTINGS_PATH=/Users/shulie/.m2/settings.xml
-#压测引擎项目源码根目录
-#PRESSURE_ENGINE_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-pressure-engine
+#IMAGE_TAG="latest"
 
 #自定义参数 （以下变量需要根据自己实际情况进行修改）
 #Gradle目录
@@ -43,33 +33,41 @@ MAVEN_SETTINGS_PATH=~/.m2/settings.xml
 JMETER_SOURCE_PATH=~/Documents/job2/Takin-jmeter
 #压测引擎项目源码根目录
 PRESSURE_ENGINE_SOURCE_PATH=~/Documents/job2/Takin-pressure-engine
-
+#仓库地址
+HARBOR_IP=192.168.1.119
+HARBOR_ADDRESS=$HARBOR_IP/library/pressure-engine
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"
 }
 
-while getopts ':t:' opt
-do
-    case $opt in
-        t)
-	    IMAGE_TAG=$OPTARG
-	    ;;
-	?)
-	    echo "未知参数"
-	    ;;
+# 参数
+# -t 镜像TAG，如：-t v4.9.2.15
+# -p 推送到仓库
+# -s 保存到本地
+# -r 删除本地镜像
+
+while getopts 't:psr' OPT; do
+    case $OPT in
+        t) IMAGE_TAG="$OPTARG"
+          if [[ $IMAGE_TAG == -* ]]; then
+            echo '缺少TAG,请在-t参数后面输入TAG值！如-t v4.9.2.15'
+            exit 1;
+          fi
+          ;;
+        p) ACT='y';;
+        s) ACT='s';;
+        r) ACT='r';;
+        ?) echo '未知参数';;
     esac
 done
+echo "IMAGE_TAG="$IMAGE_TAG
+echo "ACT="$ACT
 
-#校验目录
-log ' >>> check dir.. <<< '
-if [ ! -d "${JMETER_SOURCE_PATH}" ];then
-    echo "JMETER_SOURCE_PATH IS NOT EXISTS"
-    exit 1;
-fi
-if [ ! -d "${PRESSURE_ENGINE_SOURCE_PATH}" ];then
-    echo "PRESSURE_ENGINE_SOURCE_PATH IS NOT EXISTS"
-    exit 1;
+if [ "x${IMAGE_TAG}" == "x" ];
+then
+  echo '缺少TAG,请在-t参数后面输入TAG值！如-t v4.9.2.15'
+  exit 1;
 fi
 
 #使用gradle给jmeter编译
@@ -78,6 +76,7 @@ sleep 2
 #清空jmeter日志
 echo "" > $JMETER_SOURCE_PATH/bin/jmeter.log
 cd $JMETER_SOURCE_PATH
+git pull
 $GRADLE_HOME/bin/gradle src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test
 $GRADLE_HOME/bin/gradle src:dist:createDist
 
@@ -109,6 +108,7 @@ rm -rf .*
 log ' >>> 打包，上传.. <<< '
 sleep 2
 cd $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter
+git pull
 #mvn clean deploy -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
 mvn clean install -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
 #打包上传后移除jmeter
@@ -155,4 +155,39 @@ docker build --platform linux/amd64 -t forcecop/pressure-engine:$IMAGE_TAG .
 #docker save -o pressure-engine-$IMAGE_TAG.tar forcecop/pressure-engine:$IMAGE_TAG
 
 #log " >>> 镜像pressure-engine-${IMAGE_TAG}.tar已经导出到${BUILD_IMAGE_PATH}/images, 请查看 <<< "
+
+log ' >>> jmeter库git打tag.. <<< '
+sleep 2
+cd $JMETER_SOURCE_PATH
+git tag $IMAGE_TAG
+git push origin $IMAGE_TAG
+log ' >>> pressure-engine库git打tag.. <<< '
+cd $PRESSURE_ENGINE_SOURCE_PATH
+git tag $IMAGE_TAG
+git push origin $IMAGE_TAG
+
+imageId=`docker images|grep 'forcecop/pressure-engine'|grep $IMAGE_TAG|awk '{print $3}'`
+if [ $ACT == 'y' ]; then
+  log ' >>> push to library <<< '
+  docker tag forcecop/pressure-engine:$IMAGE_TAG $HARBOR_ADDRESS:$IMAGE_TAG
+#      docker login $HARBOR_IP
+  docker push $HARBOR_ADDRESS:$IMAGE_TAG
+elif [ $ACT == 's' ]; then
+  log ' >>> save to local <<< '
+  docker save -o pressure-engine-$IMAGE_TAG.tar forcecop/pressure-engine:$IMAGE_TAG
+  open ./
+elif [ $ACT == 'r' ]; then
+  log ' >>> delete image tag from local <<< '
+  echo 'docker rmi '$imageId' --force'
+  docker rmi $imageId --force
+fi
+
+echo 'tag : docker tag forcecop/pressure-engine:'$IMAGE_TAG $HARBOR_ADDRESS':'$IMAGE_TAG
+echo '保存到本地：docker save -o pressure-engine-'$IMAGE_TAG'.tar forcecop/pressure-engine:'$IMAGE_TAG
+echo 'push : '
+echo '     docker login '$HARBOR_IP
+echo '     docker push '$HARBOR_ADDRESS':'$IMAGE_TAG
+echo '删除： docker rmi '$imageId' --force'
+echo '删除镜像和tag： ./deleteTag.sh -t '$IMAGE_TAG
+
 log ' >>> finish ^ . ^ bye ! <<< '
