@@ -90,6 +90,9 @@ public class JmeterPlugin implements PressurePlugin {
         EnginePressureConfig pressureConfig = context.getPressureConfig();
         EnginePtlLogConfig ptlLogConfig = pressureConfig.getPtlLogConfig();
         if (null != ptlLogConfig) {
+            if (null != ptlLogConfig.getPtlUploadFrom()){
+                argsList.add("-Dptl.ptlUploadFrom=" + ptlLogConfig.getPtlUploadFrom());
+            }
             if (null != ptlLogConfig.getPtlFileEnable()) {
                 argsList.add("-Dptl.ptlFileEnable=" + ptlLogConfig.getPtlFileEnable());
             }

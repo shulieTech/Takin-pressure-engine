@@ -8,6 +8,11 @@ import lombok.Data;
  */
 @Data
 public class EnginePtlLogConfig extends AbstractEntry {
+
+    /**
+     * 流量明细上传位置
+     */
+    private String ptlUploadFrom;
     /**
      * 是否输出ptl日志文件
      */
