@@ -136,7 +136,7 @@ rm -rf pressure-engine/
 tar -zxvf pressure-engine.tar.gz
 rm -rf pressure-engine.tar.gz
 #docker构建
-docker build -t forcecop/pressure-engine:$IMAGE_TAG .
+docker build --platform linux/amd64 -t forcecop/pressure-engine:$IMAGE_TAG .
 
 #导出镜像
 #log ' >>> 开始导出镜像.. <<< '
