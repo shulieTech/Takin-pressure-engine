@@ -1,37 +1,100 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.util;
 
-import com.google.gson.Gson;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
+import io.shulie.flpt.pressure.engine.Bootstrap;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
- * Create by xuyh at 2020/4/18 16:00.
+ * @Author: liyuanba
+ * @Date: 2021/10/18 4:41 下午
  */
 public class JsonUtils {
-    private static Gson gson = new Gson();
+    private static final Logger log = LoggerFactory.getLogger(JsonUtils .class);
 
-    public static String obj2Json(Object obj) {
-        return gson.toJson(obj);
+    public static String toJson(Object o) {
+        if (null == o) {
+            return null;
+        }
+        try {
+            return JSON.toJSONString(o);
+        } catch (Exception e) {
+            log.error("toJson failed!o="+o);
+        }
+        return null;
     }
 
-    public static <T> T json2Obj(String json, Class<T> tClass) {
-        return gson.fromJson(json, tClass);
+    public static JSONObject parse(String text) {
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
+        JSONObject json = null;
+        try {
+            json = JSON.parseObject(text);
+        } catch (Exception e) {
+            log.error("parse json failed!text="+text);
+        }
+        return json;
     }
 
-    public static <T> T bytes2Obj(byte[] bytes, Class<T> tClass) {
-        return gson.fromJson(new String(bytes), tClass);
+    public static <T> T parseObject(String text, Class<T> clazz) {
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
+        T result = null;
+        try {
+            result = JSON.parseObject(text, clazz);
+        } catch (Exception e) {
+            log.error("parse json to object class failed!text="+text);
+        }
+        return result;
     }
+
+    public static <T> T parseObject(String text, TypeReference<T> type) {
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
+        T result = null;
+        try {
+            result = JSON.parseObject(text, type);
+        } catch (Exception e) {
+            log.error("parse json to object type failed!text="+text);
+        }
+        return result;
+    }
+
+    public static JSONArray parseArray(String text) {
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
+        JSONArray result = null;
+        try {
+            result = JSON.parseArray(text);
+        } catch (Exception e) {
+            log.error("json parseArray failed!text="+text);
+        }
+        return result;
+    }
+
+    public static <T> List<T> parseArray(String text, Class<T> clazz) {
+        if (StringUtils.isBlank(text)) {
+            return null;
+        }
+        List<T> result = null;
+        try {
+            result = JSON.parseArray(text, clazz);
+        } catch (Exception e) {
+            log.error("json parseArray failed!text="+text);
+        }
+        return result;
+    }
+
+
 }

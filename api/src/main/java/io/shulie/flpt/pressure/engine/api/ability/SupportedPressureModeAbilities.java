@@ -16,7 +16,8 @@
 package io.shulie.flpt.pressure.engine.api.ability;
 
 import io.shulie.flpt.pressure.engine.api.ability.model.*;
-import io.shulie.flpt.pressure.engine.api.enums.EnginePressureMode;
+import io.shulie.flpt.pressure.engine.api.enums.PressureSceneEnum;
+import io.shulie.flpt.pressure.engine.api.enums.ThreadGroupTypeEnum;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 
 import java.util.HashMap;
@@ -33,7 +34,7 @@ public final class SupportedPressureModeAbilities {
     private PressureContext context;
 
     //支持的压力模式
-    private Map<EnginePressureMode, BaseAbility> mapAbilities = new HashMap<>();
+    private Map<PressureSceneEnum, BaseAbility> mapAbilities = new HashMap<>();
 
     private SupportedPressureModeAbilities(PressureContext context) {
         this.context = context;
@@ -46,7 +47,7 @@ public final class SupportedPressureModeAbilities {
      * @param <T>
      * @return
      */
-    public <T> T getPressureModeAbility(EnginePressureMode enginePressureMode) {
+    public <T> T getPressureModeAbility(PressureSceneEnum enginePressureMode) {
         return (T) mapAbilities.get(enginePressureMode);
     }
 
@@ -65,27 +66,27 @@ public final class SupportedPressureModeAbilities {
             //获取并发模式能力
             ConcurrencyAbility concurrencyAbility = enginePressureModeAbility.concurrencyModeAbility(context);
             if(concurrencyAbility != null) {
-                mapAbilities.put(EnginePressureMode.CONCURRENCY, concurrencyAbility);
+                mapAbilities.put(PressureSceneEnum.DEFAULT, concurrencyAbility);
             }
             //tps模式
-            TPSAbility tpsAbility = enginePressureModeAbility.tpsModeAbility(context);
-            if(tpsAbility != null) {
-                mapAbilities.put(EnginePressureMode.TPS, tpsAbility);
-            }
+//            TPSAbility tpsAbility = enginePressureModeAbility.tpsModeAbility(context);
+//            if(tpsAbility != null) {
+//                mapAbilities.put(PressureSceneEnum.DEFAULT, tpsAbility);
+//            }
             //流量调试
             FlowDebugAbility flowDebugAbility = enginePressureModeAbility.flowDebugModeAbility(context);
             if(flowDebugAbility != null) {
-                mapAbilities.put(EnginePressureMode.FLOW_DEBUG, flowDebugAbility);
+                mapAbilities.put(PressureSceneEnum.FLOW_DEBUG, flowDebugAbility);
             }
             //脚本调试
             TryRunAbility tryRunAbility = enginePressureModeAbility.tryRunModeAbility(context);
             if(tryRunAbility != null) {
-                mapAbilities.put(EnginePressureMode.TRY_RUN, tryRunAbility);
+                mapAbilities.put(PressureSceneEnum.TRY_RUN, tryRunAbility);
             }
             //巡检
             InspectionAbility inspectionAbility = enginePressureModeAbility.inspectionModeAbility(context);
             if(inspectionAbility != null) {
-                mapAbilities.put(EnginePressureMode.INSPECTION_MODE, inspectionAbility);
+                mapAbilities.put(PressureSceneEnum.INSPECTION_MODE, inspectionAbility);
             }
         }
         return this;

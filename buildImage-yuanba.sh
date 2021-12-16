@@ -25,17 +25,16 @@
 #IMAGE_TAG="latest"
 
 #自定义参数 （以下变量需要根据自己实际情况进行修改）
+#JMETER源码路径
+JMETER_SOURCE_PATH=~/Documents/job2/Takin-jmeter
 #Gradle目录
 GRADLE_HOME=~/.gradle/wrapper/dists/gradle-6.6-bin/dflktxzwamd4bv66q00iv4ga9/gradle-6.6
 #Maven settings文件路径
 MAVEN_SETTINGS_PATH=~/.m2/settings.xml
-#JMETER源码路径
-JMETER_SOURCE_PATH=~/Documents/job2/Takin-jmeter
 #压测引擎项目源码根目录
 PRESSURE_ENGINE_SOURCE_PATH=~/Documents/job2/Takin-pressure-engine
 #仓库地址
 HARBOR_IP=192.168.1.119
-HARBOR_ADDRESS=$HARBOR_IP/library/pressure-engine
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"
@@ -169,9 +168,9 @@ git push origin $IMAGE_TAG
 imageId=`docker images|grep 'forcecop/pressure-engine'|grep $IMAGE_TAG|awk '{print $3}'`
 if [ $ACT == 'y' ]; then
   log ' >>> push to library <<< '
-  docker tag forcecop/pressure-engine:$IMAGE_TAG $HARBOR_ADDRESS:$IMAGE_TAG
+  docker tag forcecop/pressure-engine:$IMAGE_TAG $HARBOR_IP/library/pressure-engine:$IMAGE_TAG
 #      docker login $HARBOR_IP
-  docker push $HARBOR_ADDRESS:$IMAGE_TAG
+  docker push $HARBOR_IP/library/pressure-engine:$IMAGE_TAG
 elif [ $ACT == 's' ]; then
   log ' >>> save to local <<< '
   docker save -o pressure-engine-$IMAGE_TAG.tar forcecop/pressure-engine:$IMAGE_TAG
@@ -182,11 +181,11 @@ elif [ $ACT == 'r' ]; then
   docker rmi $imageId --force
 fi
 
-echo 'tag : docker tag forcecop/pressure-engine:'$IMAGE_TAG $HARBOR_ADDRESS':'$IMAGE_TAG
+echo 'tag : docker tag forcecop/pressure-engine:'$IMAGE_TAG $HARBOR_IP'/library/pressure-engine:'$IMAGE_TAG
 echo '保存到本地：docker save -o pressure-engine-'$IMAGE_TAG'.tar forcecop/pressure-engine:'$IMAGE_TAG
 echo 'push : '
 echo '     docker login '$HARBOR_IP
-echo '     docker push '$HARBOR_ADDRESS':'$IMAGE_TAG
+echo '     docker push '$HARBOR_IP'/library/pressure-engine:'$IMAGE_TAG
 echo '删除： docker rmi '$imageId' --force'
 echo '删除镜像和tag： ./deleteTag.sh -t '$IMAGE_TAG
 

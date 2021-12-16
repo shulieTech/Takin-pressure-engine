@@ -17,6 +17,7 @@ package io.shulie.flpt.pressure.engine.api.plugin;
 
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
+import io.shulie.flpt.pressure.engine.api.entity.DataFile;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
 import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
 

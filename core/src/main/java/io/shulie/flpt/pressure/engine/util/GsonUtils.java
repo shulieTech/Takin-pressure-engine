@@ -15,20 +15,23 @@
 
 package io.shulie.flpt.pressure.engine.util;
 
-import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
-import io.shulie.flpt.pressure.engine.health.HealthCheck;
+import com.google.gson.Gson;
 
-import java.util.HashMap;
-import java.util.Map;
+/**
+ * Create by xuyh at 2020/4/18 16:00.
+ */
+public class GsonUtils {
+    private static Gson gson = new Gson();
 
-public class HealthCheckTest {
+    public static String obj2Json(Object obj) {
+        return gson.toJson(obj);
+    }
 
-    public static void main(String[] args) {
-        PressureContext context = new PressureContext();
-        Map<String, Object> parmas = new HashMap<>();
-        parmas.put("consoleUrl", "http://localhost:10010");
-//        context.setTaskParams(parmas);
-        HealthCheck healthCheck = new HealthCheck();
-        healthCheck.register(context);
+    public static <T> T json2Obj(String json, Class<T> tClass) {
+        return gson.fromJson(json, tClass);
+    }
+
+    public static <T> T bytes2Obj(byte[] bytes, Class<T> tClass) {
+        return gson.fromJson(new String(bytes), tClass);
     }
 }

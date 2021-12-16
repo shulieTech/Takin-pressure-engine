@@ -15,12 +15,15 @@
 
 package io.shulie.flpt.pressure.engine.api.entity;
 
+import lombok.Data;
+
 /**
  * 业务活动信息  数据绑定了业务活动对应的tps信息
  *
  * @author lipeng
  * @date 2021-07-29 3:32 下午
  */
+@Data
 public class BusinessActivity {
 
     //业务活动名称，即元素名称
@@ -28,22 +31,6 @@ public class BusinessActivity {
 
     //目标TPS
     private String throughputPercent;
-
-    public String getThroughputPercent() {
-        return throughputPercent;
-    }
-
-    public void setThroughputPercent(String throughputPercent) {
-        this.throughputPercent = throughputPercent;
-    }
-
-    public String getElementTestName() {
-        return elementTestName;
-    }
-
-    public void setElementTestName(String elementTestName) {
-        this.elementTestName = elementTestName;
-    }
 
     public BusinessActivity(String elementTestName, String throughputPercent) {
         this.elementTestName = elementTestName;

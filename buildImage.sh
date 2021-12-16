@@ -4,7 +4,7 @@
 # Email: shulie@shulie.io
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
-# You may obtain a zy of the License at
+# You may obtain a copy of the License at
 #
 #      http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -26,24 +26,13 @@ IMAGE_TAG="latest"
 
 #自定义参数 （以下变量需要根据自己实际情况进行修改）
 #JMETER源码路径
-#JMETER_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-jmeter
+JMETER_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-jmeter
 #Gradle目录
-#GRADLE_HOME=/Users/shulie/Documents/gradle-6.6
+GRADLE_HOME=/Users/shulie/Documents/gradle-6.6
 #Maven settings文件路径
-#MAVEN_SETTINGS_PATH=/Users/shulie/.m2/settings.xml
+MAVEN_SETTINGS_PATH=/Users/shulie/.m2/settings.xml
 #压测引擎项目源码根目录
-#PRESSURE_ENGINE_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-pressure-engine
-
-#自定义参数 （以下变量需要根据自己实际情况进行修改）
-#Gradle目录
-GRADLE_HOME=~/.gradle/wrapper/dists/gradle-6.6-bin/dflktxzwamd4bv66q00iv4ga9/gradle-6.6
-#Maven settings文件路径
-MAVEN_SETTINGS_PATH=~/.m2/settings.xml
-#JMETER源码路径
-JMETER_SOURCE_PATH=~/Documents/job2/Takin-jmeter
-#压测引擎项目源码根目录
-PRESSURE_ENGINE_SOURCE_PATH=~/Documents/job2/Takin-pressure-engine
-
+PRESSURE_ENGINE_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-pressure-engine
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"
@@ -147,6 +136,7 @@ tar -zxvf pressure-engine.tar.gz
 rm -rf pressure-engine.tar.gz
 #docker构建
 docker build --platform linux/amd64 -t forcecop/pressure-engine:$IMAGE_TAG .
+
 #导出镜像
 #log ' >>> 开始导出镜像.. <<< '
 #sleep 2

@@ -17,7 +17,8 @@ package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.model.*;
-import io.shulie.flpt.pressure.engine.api.enums.PressureTestMode;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
+import io.shulie.flpt.pressure.engine.api.enums.PressureTestModeEnum;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.JmeterConstants;
 import io.shulie.flpt.pressure.engine.util.StringUtils;
@@ -39,23 +40,7 @@ public class JmeterPressureModeAbility implements EnginePressureModeAbility {
      */
     @Override
     public ConcurrencyAbility concurrencyModeAbility(PressureContext context) {
-        String continuedTime = context.getDuration() + "";
-        Integer continuedTimeI = context.getDuration().intValue();
-        String rampUp = context.getRampUp() + "";
-        Integer rampUpI = TryUtils.tryOperation(
-                () -> rampUp == null || rampUp.isEmpty() ? 0 : Integer.parseInt(rampUp));
-        String holdTime;
-        String pressureMode = context.getPressureMode();
-        if (PressureTestMode.getMode(pressureMode) == PressureTestMode.FIXED) {
-            holdTime = continuedTime;
-        } else {
-            holdTime = TryUtils.tryOperation(() -> StringUtils.removePoint(String.valueOf(continuedTimeI - rampUpI)));
-        }
         return ConcurrencyAbility.build(JmeterConstants.CONCURRENCY_THREAD_GROUP_NAME)
-                .setExpectThroughput(context.getExpectThroughput())
-                .setHoldTime(Long.parseLong(holdTime))
-                .setSteps(context.getSteps())
-                .setRampUp(context.getRampUp())
                 .addExtraAttribute("guiclass",
                         "com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroupGui")
                 .addExtraAttribute("testclass",
@@ -73,23 +58,7 @@ public class JmeterPressureModeAbility implements EnginePressureModeAbility {
      */
     @Override
     public TPSAbility tpsModeAbility(PressureContext context) {
-        String continuedTime = context.getDuration() + "";
-        Integer continuedTimeI = context.getDuration().intValue();
-        String rampUp = context.getRampUp() + "";
-        Integer rampUpI = TryUtils.tryOperation(
-                () -> rampUp == null || rampUp.isEmpty() ? 0 : Integer.parseInt(rampUp));
-        String holdTime;
-        String pressureMode = context.getPressureMode();
-        if (PressureTestMode.getMode(pressureMode) == PressureTestMode.FIXED) {
-            holdTime = continuedTime;
-        } else {
-            holdTime = TryUtils.tryOperation(() -> StringUtils.removePoint(String.valueOf(continuedTimeI - rampUpI)));
-        }
         return TPSAbility.build(JmeterConstants.TPS_THREAD_GROUP_NAME)
-                .setTargetTps(String.valueOf(context.getEnginePressureParams().get("tpsTargetLevel")))
-                .setHoldTime(Long.parseLong(holdTime))
-                .setSteps(context.getSteps())
-                .setRampUp(context.getRampUp())
                 .addExtraAttribute("guiclass",
                         "com.blazemeter.jmeter.threads.arrivals.ArrivalsThreadGroupGui")
                 .addExtraAttribute("testclass",

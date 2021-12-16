@@ -28,6 +28,7 @@
         <file>${work.dir}/logs/pressure-engine-${current.pid}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <FileNamePattern>${work.dir}/logs/pressure-engine-${current.pid}.%i.log</FileNamePattern>
+<!--            <FileNamePattern>/etc/engine/script/logs/pressure-engine-${current.pid}.%i.log</FileNamePattern>-->
             <minIndex>1</minIndex>
             <maxIndex>10</maxIndex>
         </rollingPolicy>
