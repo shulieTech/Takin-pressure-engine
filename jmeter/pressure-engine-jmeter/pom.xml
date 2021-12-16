@@ -21,7 +21,7 @@
 
     <groupId>io.shulie.flpt</groupId>
     <artifactId>pressure-engine-jmeter</artifactId>
-    <version>Takin-5.0.0</version>
+    <version>Takin-5.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <url>https://github.com/shulieTech/Takin-pressure-engine.git</url>

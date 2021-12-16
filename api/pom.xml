@@ -20,13 +20,13 @@
   <parent>
     <artifactId>pressure-engine</artifactId>
     <groupId>io.shulie.flpt</groupId>
-    <version>Takin-5.0.0</version>
+    <version>Takin-5.2.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.shulie.flpt</groupId>
   <artifactId>pressure-engine-api</artifactId>
-  <version>Takin-5.0.0</version>
+  <version>Takin-5.2.0-SNAPSHOT</version>
   <build>
     <plugins>
       <plugin>
