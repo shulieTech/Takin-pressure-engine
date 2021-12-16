@@ -27,7 +27,7 @@ public class HealthCheckTest {
         PressureContext context = new PressureContext();
         Map<String, Object> parmas = new HashMap<>();
         parmas.put("consoleUrl", "http://localhost:10010");
-        context.setTaskParams(parmas);
+//        context.setTaskParams(parmas);
         HealthCheck healthCheck = new HealthCheck();
         healthCheck.register(context);
     }

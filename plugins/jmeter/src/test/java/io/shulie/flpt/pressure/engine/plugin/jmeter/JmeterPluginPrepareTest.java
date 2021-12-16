@@ -60,7 +60,7 @@ public class JmeterPluginPrepareTest {
         fileSets.add(file3);
 
         taskParam.put("fileSets", fileSets);
-        context.setTaskParams(taskParam);
+//        context.setTaskParams(taskParam);
         System.out.println(new JmeterPlugin().doModifyScript(context, null));
     }
 }
