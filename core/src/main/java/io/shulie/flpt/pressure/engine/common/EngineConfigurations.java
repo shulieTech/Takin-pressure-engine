@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.common;
 
+import cn.hutool.core.io.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class EngineConfigurations {
     static {
         try {
             Properties properties = new Properties();
-            properties.load(new FileInputStream(propFile));
+            properties.load(new FileInputStream(FileUtil.file(propFile)));
             properties.forEach((k, v) -> propCache.put(String.valueOf(k), String.valueOf(v)));
         } catch (IOException e) {
             logger.warn(e.getMessage(), e);

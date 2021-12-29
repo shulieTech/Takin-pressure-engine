@@ -172,8 +172,8 @@ public class JmeterPluginUtil {
     }
 
     public static void bindPort(String host, int port) throws Exception {
-        Socket socket = new Socket();
-        socket.bind(new InetSocketAddress(host, port));
+        Socket socket = new Socket(host,port);
+//        socket.bind(new InetSocketAddress(host, port));
         socket.close();
     }
 
