@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
@@ -279,7 +280,7 @@ public class JmeterPlugin implements PressurePlugin {
         // add by lipeng  将上传的额外文件复制到resourceDir  处理压测上传接口
         String extraUploadFilePath = Constants.ENGINE_NFS_MOUNTED_PATH + File.separator
             + sceneId + File.separator + "attachments";
-        File extraUploadFileFolder = new File(extraUploadFilePath);
+        File extraUploadFileFolder = FileUtil.file(extraUploadFilePath);
         String finalJmxFolder = context.getResourcesDir() + File.separator + "final" + File.separator;
         if (extraUploadFileFolder.exists() && extraUploadFileFolder.isDirectory()) {
             try {

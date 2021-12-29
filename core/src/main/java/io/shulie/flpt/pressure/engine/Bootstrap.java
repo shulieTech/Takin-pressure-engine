@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine;
 
+import cn.hutool.core.io.FileUtil;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonObject;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
@@ -74,7 +75,7 @@ public class Bootstrap {
     public static void main(String[] args) {
         String configurationsFile = System.getProperty("configurations");
         String configurations = TryUtils.tryOperation(
-            () -> FileUtils.readTextFileContent(new File(configurationsFile)));
+            () -> FileUtils.readTextFileContent(FileUtil.file(configurationsFile)));
 
         if (configurations == null || configurations.isEmpty()) {
             logger.warn("No configuration found in config file: {}", configurationsFile);
@@ -239,7 +240,7 @@ public class Bootstrap {
     private static void handleScriptPath(PressureContext context) {
         //获取脚本路径
         String testScriptFilePath = context.getScriptPath();
-        File scriptFile = new File(testScriptFilePath);
+        File scriptFile = FileUtil.file(testScriptFilePath);
         //获取最终写入路径
         String resourceDir = context.getResourcesDir();
         String scriptDir = TryUtils.tryOperation(

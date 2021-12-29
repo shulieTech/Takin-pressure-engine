@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.util;
 
+import cn.hutool.core.io.FileUtil;
 import com.sun.management.OperatingSystemMXBean;
 import io.shulie.flpt.pressure.engine.entity.health.DiskUsage;
 import io.shulie.flpt.pressure.engine.entity.health.LoadInfo;
@@ -53,7 +54,7 @@ public class SystemResourceUtil {
      * @throws InterruptedException
      */
     public static float getCpuInfo() throws IOException, InterruptedException {
-        File file = new File("/proc/stat");
+        File file = FileUtil.file("/proc/stat");
         BufferedReader br = new BufferedReader(new InputStreamReader(
                 new FileInputStream(file)));
         StringTokenizer token = new StringTokenizer(br.readLine());

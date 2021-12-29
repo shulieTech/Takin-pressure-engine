@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
+import cn.hutool.core.io.FileUtil;
 import io.shulie.flpt.pressure.engine.util.FileUtils;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
@@ -31,7 +32,7 @@ public class ScriptModifierTest {
     private static Logger logger = LoggerFactory.getLogger(ScriptModifierTest.class);
 
     public static void main(String[] args) throws Exception {
-        File jmxFile = new File("~/test/3/resources/nested.jmx");
+        File jmxFile = FileUtil.file("~/test/3/resources/nested.jmx");
         SAXReader reader = new SAXReader();
         Document document = reader.read(jmxFile);
 //        List<Element> threadGroups = document.selectNodes("//ThreadGroup");

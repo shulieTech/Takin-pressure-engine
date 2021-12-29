@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
+import cn.hutool.core.io.FileUtil;
 import io.shulie.flpt.pressure.engine.util.FileUtils;
 import io.shulie.flpt.pressure.engine.util.StringWriter;
 import io.shulie.flpt.pressure.engine.util.TryUtils;
@@ -38,7 +39,7 @@ public class TestModiScript {
     private static Logger logger = LoggerFactory.getLogger(TestModiScript.class);
 
     public static void main(String[] args) {
-        File jmxFile = new File("/Users/johnson/Desktop/yunda-poc02.jmx");
+        File jmxFile = FileUtil.file("/Users/johnson/Desktop/yunda-poc02.jmx");
         String jmxFileContent = FileUtils.readTextFileContent(jmxFile);
         SAXReader reader = new SAXReader();
         Document document = null;

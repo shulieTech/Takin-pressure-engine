@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.util;
 
+import cn.hutool.core.io.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class ProcessUtils {
     private static int run(String directory, Long timeout, final Callback callback, final Comm comm,String[] commands) {
         final ProcessBuilder processBuilder = new ProcessBuilder(commands);
         if (directory != null) {
-            File workDir = new File(directory);
+            File workDir = FileUtil.file(directory);
             if (workDir.exists() && workDir.isDirectory()) {
                 processBuilder.directory(workDir);
             }

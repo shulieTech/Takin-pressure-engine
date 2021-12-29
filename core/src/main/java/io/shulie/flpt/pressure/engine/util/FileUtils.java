@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.util;
 
+import cn.hutool.core.io.FileUtil;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class FileUtils {
     private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
 
     public static File createFileDE(String filePathName) {
-        File file = new File(filePathName);
+        File file = FileUtil.file(filePathName);
         if (file.exists()) {
             if (!file.delete())
                 return null;
@@ -64,7 +65,7 @@ public class FileUtils {
         if (dir == null) {
             return null;
         }
-        File fileDir = new File(dir);
+        File fileDir = FileUtil.file(dir);
         if (!fileDir.isDirectory()) {
             logger.warn("Expected a dir, but not: '{}'", fileDir.getPath());
         }
@@ -91,7 +92,7 @@ public class FileUtils {
             String[] children = dir.list();
             if (children != null) {
                 for (String child : children) {
-                    if (!deleteDir(new File(child))) {
+                    if (!deleteDir(FileUtil.file(child))) {
                         return false;
                     }
                 }
@@ -155,7 +156,7 @@ public class FileUtils {
      * @param directory
      */
     public static void copyFileToDirectory(File from, String directory) throws IOException {
-        Files.copy(from, new File(directory + File.separator + from.getName()));
+        Files.copy(from, FileUtil.file(directory + File.separator + from.getName()));
     }
 
     /**
@@ -166,7 +167,7 @@ public class FileUtils {
      * @return
      */
     public static File getFile(String filePath, String... fileEndsWith) {
-        File result = new File(filePath);
+        File result = FileUtil.file(filePath);
         if(!result.exists()) {
             return null;
         }

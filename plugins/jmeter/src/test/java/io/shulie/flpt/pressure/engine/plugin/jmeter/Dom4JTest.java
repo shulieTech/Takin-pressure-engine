@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
+import cn.hutool.core.io.FileUtil;
 import io.shulie.flpt.pressure.engine.util.FileUtils;
 import io.shulie.flpt.pressure.engine.util.StringWriter;
 import org.dom4j.Attribute;
@@ -41,7 +42,7 @@ public class Dom4JTest {
         SAXReader reader = new SAXReader();
         Document document = null;
         try {
-            document = reader.read(new File("/Users/johnson/job-workspace/prada/pradar-splits/pressure-engine/plugins/jmeter/src/main/resources/test.xml"));
+            document = reader.read(FileUtil.file("/Users/johnson/job-workspace/prada/pradar-splits/pressure-engine/plugins/jmeter/src/main/resources/test.xml"));
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
         }

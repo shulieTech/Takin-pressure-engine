@@ -15,6 +15,7 @@
 
 package io.shulie.flpt.pressure.engine.util;
 
+import cn.hutool.core.io.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class ResourceUtils {
     private static Logger logger = LoggerFactory.getLogger(ResourceUtils.class);
 
     public static String download(String url, String targetDir) throws Exception {
-        if (!FileUtils.makeDir(new File(targetDir))) {
+        if (!FileUtils.makeDir(FileUtil.file(targetDir))) {
             throw new RuntimeException("Target dir " + targetDir + " create failed.");
         }
         String fileName = url.contains("/") ? url.substring(url.lastIndexOf("/") + 1) : url;
