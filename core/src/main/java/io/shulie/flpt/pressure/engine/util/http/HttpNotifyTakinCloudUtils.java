@@ -65,6 +65,6 @@ public class HttpNotifyTakinCloudUtils {
             reportId = 0L;
             customerId = 0L;
         }
-        logger.info("tro 交互url:{},场景:{},报告：{},客户", url,sceneId,reportId,customerId);
+        logger.info("tro 交互url:{},场景:{},报告：{},客户:{}", url,sceneId,reportId,customerId);
     }
 }
