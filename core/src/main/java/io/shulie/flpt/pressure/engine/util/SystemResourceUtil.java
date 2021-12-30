@@ -477,46 +477,46 @@ public class SystemResourceUtil {
         }
     }
 
-    private static void getMaxNetSpeed(List<NetUsageInfo> list){
-        String temp = NET_CARD_MAX_SPEED;
-        if(StringUtils.isNotBlank(temp)){
-            for(NetUsageInfo netUsageInfo : list){
-                netUsageInfo.setMaxSpeed(temp);
-            }
-        }else {
-            for(NetUsageInfo netUsageInfo : list){
-                Process pro1 = null;
-                Runtime r = Runtime.getRuntime();
-                BufferedReader in1 = null;
-                try {
-                    String command = "ethtool " + netUsageInfo.getName();
-                    //第一次采集流量数据
-                    pro1 = r.exec(command);
-                    pro1.waitFor(2,TimeUnit.SECONDS);
-                    in1 = new BufferedReader(new InputStreamReader(pro1.getInputStream()));
-                    String line;
-                    while((line=in1.readLine()) != null){
-                        if(line.startsWith("Speed")){
-                            netUsageInfo.setMaxSpeed(line.replace("Speed:","").replaceAll(" ",""));
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.error("getMaxNetSpeed error:",e);
-                } finally {
-                    try {
-                        if(in1 != null){
-                            in1.close();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if(pro1 != null){
-                        pro1.destroy();
-                    }
-                }
-            }
-        }
-    }
+//    private static void getMaxNetSpeed(List<NetUsageInfo> list){
+//        String temp = NET_CARD_MAX_SPEED;
+//        if(StringUtils.isNotBlank(temp)){
+//            for(NetUsageInfo netUsageInfo : list){
+//                netUsageInfo.setMaxSpeed(temp);
+//            }
+//        }else {
+//            for(NetUsageInfo netUsageInfo : list){
+//                Process pro1 = null;
+//                Runtime r = Runtime.getRuntime();
+//                BufferedReader in1 = null;
+//                try {
+//                    String command = "ethtool " + netUsageInfo.getName();
+//                    //第一次采集流量数据
+//                    pro1 = r.exec(command);
+//                    pro1.waitFor(2,TimeUnit.SECONDS);
+//                    in1 = new BufferedReader(new InputStreamReader(pro1.getInputStream()));
+//                    String line;
+//                    while((line=in1.readLine()) != null){
+//                        if(line.startsWith("Speed")){
+//                            netUsageInfo.setMaxSpeed(line.replace("Speed:","").replaceAll(" ",""));
+//                        }
+//                    }
+//                } catch (Exception e) {
+//                    logger.error("getMaxNetSpeed error:",e);
+//                } finally {
+//                    try {
+//                        if(in1 != null){
+//                            in1.close();
+//                        }
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                    if(pro1 != null){
+//                        pro1.destroy();
+//                    }
+//                }
+//            }
+//        }
+//    }
 
 
     private static void getNetUsage(List<NetUsageInfo> list){
@@ -594,12 +594,12 @@ public class SystemResourceUtil {
     }
 
 
-    public static List<NetUsageInfo> getNetUsageInfo(){
-        List<NetUsageInfo> list = getNetCard();
-        getMaxNetSpeed(list);
-        getNetUsage(list);
-        return list;
-    }
+//    public static List<NetUsageInfo> getNetUsageInfo(){
+//        List<NetUsageInfo> list = getNetCard();
+//        getMaxNetSpeed(list);
+//        getNetUsage(list);
+//        return list;
+//    }
 
     public static Map<String ,Object> getServerInfo() {
         Map<String, Object> map = new HashMap<>();

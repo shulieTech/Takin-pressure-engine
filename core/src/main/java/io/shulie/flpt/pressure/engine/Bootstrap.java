@@ -95,9 +95,6 @@ public class Bootstrap {
         logger.info("workDir="+workDir);
         engineType = System.getProperty("engine.type");
 
-
-        logger.info("Bootstrap startup, args length: {} args: {}", args.length, args);
-
         logger.info("Task config acquired, config: {}", configurations);
 
         initialPressureContext(config);
