@@ -1142,10 +1142,18 @@ public class ScriptModifier {
      * 常规：修改线程组
      */
     private static void modeifyDefautlThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
+        //没有配置信息的节点不处理
+        if (null == config) {
+            return;
+        }
         String transaction = DomUtils.getTransaction(threadGroupElement);
         ThreadGroupConfig threadGroupConfig = CommonUtil.getFromMap(config.getThreadGroupConfigMap(), transaction);
-        //没有配置信息的节点不处理
-        if (null == config || null == threadGroupConfig) {
+        if (null == threadGroupConfig) {
+            if (context.isOldVersion()) {
+                threadGroupConfig = CommonUtil.getFromMap(config.getThreadGroupConfigMap(), "all");
+            }
+        }
+        if (null == threadGroupConfig) {
             return;
         }
         ThreadGroupTypeEnum type = ThreadGroupTypeEnum.value(threadGroupConfig.getType());
