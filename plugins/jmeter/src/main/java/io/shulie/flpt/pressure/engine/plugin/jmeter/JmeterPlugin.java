@@ -294,6 +294,7 @@ public class JmeterPlugin implements PressurePlugin {
 
         //将最终的jmx文件写入共享目录
         try {
+            logger.info("final jmx file content:"+finalStr);
             String saveFinalJmxPath = context.getLogDir() + File.separator + "test-" + (StringUtils.isNotBlank(
                 context.getPodNumber()) ? "-" + context.getPodNumber() : System.currentTimeMillis()) + ".jmx";
             FileUtils.writeTextFile(finalStr, saveFinalJmxPath);
