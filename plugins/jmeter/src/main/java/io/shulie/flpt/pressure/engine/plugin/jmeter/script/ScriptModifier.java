@@ -1145,7 +1145,7 @@ public class ScriptModifier {
         String transaction = DomUtils.getTransaction(threadGroupElement);
         ThreadGroupConfig threadGroupConfig = CommonUtil.getFromMap(config.getThreadGroupConfigMap(), transaction);
         //没有配置信息的节点不处理
-        if (null == config) {
+        if (null == config || null == threadGroupConfig) {
             return;
         }
         ThreadGroupTypeEnum type = ThreadGroupTypeEnum.value(threadGroupConfig.getType());
