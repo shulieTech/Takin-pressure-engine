@@ -1144,6 +1144,7 @@ public class ScriptModifier {
     private static void modeifyDefautlThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
         //没有配置信息的节点不处理
         if (null == config) {
+            logger.warn("config is null!");
             return;
         }
         String transaction = DomUtils.getTransaction(threadGroupElement);
@@ -1154,6 +1155,7 @@ public class ScriptModifier {
             }
         }
         if (null == threadGroupConfig) {
+            logger.warn("threadGroupConfig is null!transaction="+transaction+", map="+JsonUtils.toJson(config.getThreadGroupConfigMap()));
             return;
         }
         ThreadGroupTypeEnum type = ThreadGroupTypeEnum.value(threadGroupConfig.getType());
