@@ -269,7 +269,7 @@ public class ScriptModifier {
      * @param threadGroupElement    线程组
      * @param context               参数
      */
-    public static void addConstantsThroughputControl(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
+    public static void addConstantsThroughputControl(Element threadGroupElement, PressureContext context, EnginePressureConfig config, int threadNum) {
         Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
         if (null == businessMap) {
             return;
@@ -286,11 +286,111 @@ public class ScriptModifier {
         if (CollectionUtils.isEmpty(elements)) {
             return;
         }
-        String transcation = DomUtils.getTransaction(threadGroupElement);
-        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
-        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
+//        String transcation = DomUtils.getTransaction(threadGroupElement);
+//        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
+        //常量吞吐量控制器
+//        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
+        //精准吞吐量定时器
+        addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
     }
 
+    public static boolean addPreciseThroughputTimer(List<Element> elements, PressureContext context, double factor, int threadNum) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return false;
+        }
+        for (Element e : elements) {
+            NodeTypeEnum type = NodeTypeEnum.value(e.getName());
+            //非线程组节点不处理
+            if (null == type || type != NodeTypeEnum.SAMPLER) {
+                boolean isAdd = addPreciseThroughputTimer(DomUtils.elements(e), context, factor, threadNum);
+                if (isAdd) {
+                    return true;
+                } else {
+                    continue;
+                }
+            }
+            String transcation = DomUtils.getTransaction(e);
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
+            int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+            double podTps = (double) tps;
+            if (null != context.getPodCount() && context.getPodCount() > 0) {
+                podTps = podTps / context.getPodCount();
+            }
+            //当前业务活动tps占比
+            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
+            //求1分钟的并发数,
+            double throughput = podTps*60;
+            //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+            if (factor > 5) {
+                throughput += factor;
+            } else {
+                throughput *= (1+factor);
+            }
+            //给第一个采样器加准确的吞吐量定时器
+            addPreciseThroughputTimer(e, throughput, percent, factor, context, threadNum);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 添加准确的吞吐量定时器
+     */
+    public static void addPreciseThroughputTimer(Element samplerElement, Double throughput, Double throughputPercent,
+                                                 Double tpsFactor, PressureContext context, int threadNum) {
+        // 1. 校验采样器是否存在
+        if (null == samplerElement) {
+            logger.error("sampleElement is null");
+            return;
+        }
+        // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
+        Element samplerParent = samplerElement.getParent();
+        Element samplerElementHashTree = DomUtils.findChildrenContainerElement(samplerElement);
+        if (null == samplerElementHashTree) {
+            List<Element> elements = samplerParent.elements();
+            int pos = elements.indexOf(samplerElement);
+            samplerElementHashTree = samplerElement.addElement("hashTree");
+            samplerElement.remove(samplerElement);
+            samplerParent.elements().add(pos+1, samplerElementHashTree);
+        }
+
+        // 5. 在采样器父节点下面创建准确的吞吐量定时器
+        Element preciseThroughputTimer = samplerElementHashTree.addElement("PreciseThroughputTimer");
+        preciseThroughputTimer.addAttribute("guiclass", "TestBeanGUI");
+        preciseThroughputTimer.addAttribute("testclass", "PreciseThroughputTimer");
+        String testName = DomUtils.getTestName(samplerElement);
+        preciseThroughputTimer.addAttribute("testname", getSampleThroughputControllerTestname(testName));
+        preciseThroughputTimer.addAttribute("enabled", "true");
+
+        //默认参数，不知道干啥的
+        DomUtils.addBasePropElement(preciseThroughputTimer, "allowedThroughputSurplus", 1.0d);
+        //目标吞吐量（每个"吞吐期"的样本）
+        DomUtils.addBasePropElement(preciseThroughputTimer, "throughput", throughput);
+        //吞吐周期（秒）
+        DomUtils.addBasePropElement(preciseThroughputTimer, "throughputPeriod", 1);
+        //测试持续时间
+        DomUtils.addBasePropElement(preciseThroughputTimer, "duration", context.getDuration());
+//        int batchSize = (int) Math.ceil(threadNum /4d);
+        int batchSize = 1;
+        //批处理中的线程数
+        DomUtils.addBasePropElement(preciseThroughputTimer, "batchSize", batchSize);
+        //批处理中的线程之间的延时（ms）
+        DomUtils.addBasePropElement(preciseThroughputTimer, "batchThreadDelay", 0);
+        //碎金种子（从0变为随机）
+        DomUtils.addBasePropElement(preciseThroughputTimer, "randomSeed", 0L);
+        //默认参数，不知道干啥的
+        DomUtils.addBasePropElement(preciseThroughputTimer, "exactLimit", 10000);
+        if (null != throughputPercent) {
+            DomUtils.addBasePropElement(preciseThroughputTimer, "percent", throughputPercent);
+        }
+        if (null != tpsFactor) {
+            DomUtils.addBasePropElement(preciseThroughputTimer, "tpsFactor", tpsFactor);
+        }
+    }
+
+    /**
+     * 添加常量吞吐量控制器
+     */
     public static void addConstantsThroughputControl(List<Element> elements, PressureContext context, double factor) {
         if (CollectionUtils.isEmpty(elements)) {
             return;
@@ -299,7 +399,6 @@ public class ScriptModifier {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
             if (null == type || type != NodeTypeEnum.SAMPLER) {
-                addConstantsThroughputControl(DomUtils.elements(e), context, factor);
                 continue;
             }
             String transcation = DomUtils.getTransaction(e);
@@ -319,14 +418,13 @@ public class ScriptModifier {
             } else {
                 throughput *= (1+factor);
             }
-            //给每一个采样器添加常量吞吐量控制器
+            //给第一个采样器添加常量吞吐量控制器
             addEachConstantsThroughputControl(e, throughput, percent, factor);
         }
     }
 
-
     /**
-     * 给每一个sampleElement添加常量吞吐量定时器
+     * 给第一个sampleElement添加常量吞吐量定时器
      *
      * 逻辑：
      * 1. 校验采样器是否存在
@@ -1217,8 +1315,9 @@ public class ScriptModifier {
                 break;
             //新版tps模式实现
             default:
-                modifyDefaultTps0ThreadGroup(threadGroupElement, context, config, tgConfig);
-                addConstantsThroughputControl(threadGroupElement, context, config);
+                int threadNum = getThreadNum(threadGroupElement, context, config, tgConfig);
+                modifyDefaultTps0ThreadGroup(threadGroupElement, context, config, tgConfig, threadNum);
+                addConstantsThroughputControl(threadGroupElement, context, config, threadNum);
                 break;
         }
     }
@@ -1258,10 +1357,7 @@ public class ScriptModifier {
 //        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(tpsTargetLevel));
     }
 
-    /**
-     * 新的tps模式实现
-     */
-    private static void modifyDefaultTps0ThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
+    private static int getThreadNum(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
         //采用阶梯递增模式，起始并发为tps数，每2秒递增1次
         int threadNum = CommonUtil.getValue(0, tgConfig, ThreadGroupConfig::getThreadNum);
         if (threadNum <= 0) {
@@ -1300,6 +1396,13 @@ public class ScriptModifier {
                 threadNum = maxThreadNum;
             }
         }
+        return threadNum;
+    }
+
+    /**
+     * 新的tps模式实现
+     */
+    private static void modifyDefaultTps0ThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig, int threadNum) {
         double tpsTargetLevel = CommonUtil.getValue(0d, config, EnginePressureConfig::getTpsTargetLevel);
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
         Integer steps = tgConfig.getSteps();

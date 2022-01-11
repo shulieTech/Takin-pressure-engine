@@ -115,8 +115,11 @@ public abstract class DomUtils {
             Element node = container.addElement("doubleProp");
             node.addElement("name").setText(name);
             node.addElement("value").setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
-        } else if (value instanceof Integer || value instanceof Long) {
+            node.addElement("savedValue").setText("0.0");
+        } else if (value instanceof Integer) {
             container.addElement("intProp").addAttribute("name", name).setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
+        } else if (value instanceof Long) {
+            container.addElement("longProp").addAttribute("name", name).setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
         } else if (value instanceof String) {
             container.addElement("stringProp").addAttribute("name", name).setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
         }
