@@ -6,6 +6,13 @@ import org.slf4j.LoggerFactory;
 public class NumberUtils {
     private static final Logger logger = LoggerFactory.getLogger(NumberUtils.class);
 
+    public static double divide(long b, long d) {
+        if (d == 0) {
+            return 0d;
+        }
+        return ((double) b)/d;
+    }
+
     public static int parseInt(Object value) {
         return parseInt(value, 0);
     }

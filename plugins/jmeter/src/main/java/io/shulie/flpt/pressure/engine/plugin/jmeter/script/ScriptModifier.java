@@ -298,6 +298,15 @@ public class ScriptModifier {
         if (CollectionUtils.isEmpty(elements)) {
             return false;
         }
+        int totalTps = elements.stream().filter(Objects::nonNull)
+                .map(DomUtils::getTransaction)
+                .filter(StringUtils::isNotBlank)
+                .map(transcation -> CommonUtil.getFromMap(context.getBusinessMap(), transcation))
+                .filter(Objects::nonNull)
+                .map(BusinessActivityConfig::getTps)
+                .filter(Objects::nonNull)
+                .mapToInt(i -> i)
+                .sum();
         for (Element e : elements) {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
@@ -316,10 +325,10 @@ public class ScriptModifier {
             if (null != context.getPodCount() && context.getPodCount() > 0) {
                 podTps = podTps / context.getPodCount();
             }
+            //求1分钟的并发数,
+            double throughput = podTps;
             //当前业务活动tps占比
             double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
-            //求1分钟的并发数,
-            double throughput = podTps*60;
             //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
             if (factor > 5) {
                 throughput += factor;
@@ -381,9 +390,9 @@ public class ScriptModifier {
         DomUtils.addBasePropElement(preciseThroughputTimer, "randomSeed", 0L);
         //默认参数，不知道干啥的
         DomUtils.addBasePropElement(preciseThroughputTimer, "exactLimit", 10000);
-        if (null != throughputPercent) {
-            DomUtils.addBasePropElement(preciseThroughputTimer, "percent", throughputPercent);
-        }
+//        if (null != throughputPercent) {
+//            DomUtils.addBasePropElement(preciseThroughputTimer, "percent", throughputPercent);
+//        }
         if (null != tpsFactor) {
             DomUtils.addBasePropElement(preciseThroughputTimer, "tpsFactor", tpsFactor);
         }
