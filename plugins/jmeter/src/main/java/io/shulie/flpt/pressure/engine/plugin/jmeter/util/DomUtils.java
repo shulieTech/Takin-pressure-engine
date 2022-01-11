@@ -81,6 +81,9 @@ public abstract class DomUtils {
      */
     public static String getTransaction(Element element) {
         String testName = element.attributeValue("testname");
+        if (StringUtils.isBlank(testName)) {
+            return null;
+        }
         int splitPos = testName.lastIndexOf(EngineConstants.TEST_NAME_MD5_SPLIT);
         String transaction = testName;
         if (-1 != splitPos) {

@@ -298,15 +298,6 @@ public class ScriptModifier {
         if (CollectionUtils.isEmpty(elements)) {
             return false;
         }
-        int totalTps = elements.stream().filter(Objects::nonNull)
-                .map(DomUtils::getTransaction)
-                .filter(StringUtils::isNotBlank)
-                .map(transcation -> CommonUtil.getFromMap(context.getBusinessMap(), transcation))
-                .filter(Objects::nonNull)
-                .map(BusinessActivityConfig::getTps)
-                .filter(Objects::nonNull)
-                .mapToInt(i -> i)
-                .sum();
         for (Element e : elements) {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
