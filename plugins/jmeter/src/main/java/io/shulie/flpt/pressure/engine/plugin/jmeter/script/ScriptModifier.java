@@ -369,7 +369,8 @@ public class ScriptModifier {
         //吞吐周期（秒）
         DomUtils.addBasePropElement(preciseThroughputTimer, "throughputPeriod", 1);
         //测试持续时间
-        DomUtils.addBasePropElement(preciseThroughputTimer, "duration", context.getDuration());
+//        DomUtils.addBasePropElement(preciseThroughputTimer, "duration", context.getDuration());
+        DomUtils.addBasePropElement(preciseThroughputTimer, "duration", 1);
 //        int batchSize = (int) Math.ceil(threadNum /4d);
         int batchSize = 1;
         //批处理中的线程数
