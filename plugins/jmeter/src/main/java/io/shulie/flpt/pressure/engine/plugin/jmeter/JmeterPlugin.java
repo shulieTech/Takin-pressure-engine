@@ -321,14 +321,17 @@ public class JmeterPlugin implements PressurePlugin {
         String podNum = context.getPodCount() == 1 ? "1" : context.getPodNumber();
         //采样率 默认1 全部
         Integer traceSampling = context.getTraceSampling();
+        String signValidateKey = context.getSignValidateKey() == null ? "" : context.getSignValidateKey();
+        String signValidatePublicKey = context.getSignValidatePublicKey();
 
         logger.info(" >>>>> 当前场景ID为[{}], 任务ID[{}], 采样率为[{}]", sceneId, reportId, traceSampling);
         String[] args = new String[] { "-Duser.timezone=Asia/Shanghai", "-Djava.net.preferIPv4Stack=true"
             , "-Djava.net.preferIPv4Addresses=true"
             , "-Dengine.perssure.mode=" + context.getPressureScene().getCode()
-            ,"-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
+            , "-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
             , "-DCustomerId=" + customerId, "-DCallbackUrl=" + context.getCloudCallbackUrl()
-            , "-DSamplingInterval=" + traceSampling};
+            , "-DSamplingInterval=" + traceSampling, "-DsignValidateKey=" + signValidateKey
+            , "-DsignValidatePublicKey=" + signValidatePublicKey};
         String[] jmeterParam = new String[]{"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
                 , "-j", jmeterLogFilePath, portRule};
         //组装后端监听器参数

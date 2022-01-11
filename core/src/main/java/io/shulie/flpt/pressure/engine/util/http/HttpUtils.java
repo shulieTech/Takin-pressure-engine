@@ -15,6 +15,13 @@
 
 package io.shulie.flpt.pressure.engine.util.http;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.codec.digest.HmacAlgorithms;
+import org.apache.commons.codec.digest.HmacUtils;
+
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -31,12 +38,15 @@ public abstract class HttpUtils {
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    public static String doGet(String url) {
+    public static String doGet(String url, String signValidateKey, String signValidatePublicKey) {
         HostPort hostPort = getHostPortUrlFromUrl(url);
-        return doGet(hostPort.host, hostPort.port, hostPort.url);
+        return doGet(hostPort.host, hostPort.port, hostPort.url, signValidateKey, signValidatePublicKey);
     }
 
-    public static String doGet(String host, int port, String url) {
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+            value = {"UNENCRYPTED_SOCKET"},
+            justification = "目前先使用http的方式请求，暂且不改为HTTPS")
+    public static String doGet(String host, int port, String url, String signValidateKey, String signValidatePublicKey) {
         InputStream input = null;
         OutputStream output = null;
         Socket socket = null;
@@ -44,8 +54,18 @@ public abstract class HttpUtils {
             SocketAddress address = new InetSocketAddress(host, port);
             String request = "GET " + url + " HTTP/1.1\r\n"
                     + "Host: " + host + ":" + port + "\r\n"
-                    + "Connection: Keep-Alive\r\n"
-                    + "\r\n";
+                    + "Connection: Keep-Alive\r\n";
+
+            StringBuilder validateString = new StringBuilder();
+            Map<CharSequence, CharSequence> queryMap = UrlQuery.of(url, UTF_8).getQueryMap();
+            if (CollectionUtil.isNotEmpty(queryMap)) {
+                String jsonString = JSONObject.toJSONString(queryMap);
+                validateString.append(jsonString);
+            }
+            long currentTimeMillis = System.currentTimeMillis();
+            request = sign(request, validateString, currentTimeMillis, signValidateKey, signValidatePublicKey);
+            request = request + "\r\n";
+
             socket = new Socket();
             // 设置建立连接超时时间 1s
             socket.connect(address, 1000);
@@ -82,12 +102,25 @@ public abstract class HttpUtils {
         }
     }
 
-    public static String doPost(String url, String body) {
-        HostPort hostPort = getHostPortUrlFromUrl(url);
-        return doPost(hostPort.host, hostPort.port, hostPort.url, body);
+    private static String sign(String request, StringBuilder validateKey, long currentTimeMillis, String signValidateKey, String signValidatePublicKey) {
+        validateKey.append("validate-key=").append(signValidatePublicKey).append("validate-timestamp=")
+                .append(currentTimeMillis);
+        String signature = HmacUtils.hmacSha256Hex(signValidateKey, validateKey.toString());
+        request = request + "validate-key: " + signValidatePublicKey + "\r\n";
+        request = request + "validate-timestamp: " + currentTimeMillis + "\r\n";
+        request = request + "validate-signature:" + signature + "\r\n";
+        return request;
     }
 
-    public static String doPost(String host, int port, String url, String body) {
+    public static String doPost(String url, String signValidateKey, String signValidatePublicKey, String body) {
+        HostPort hostPort = getHostPortUrlFromUrl(url);
+        return doPost(hostPort.host, signValidateKey, signValidatePublicKey, hostPort.port, hostPort.url, body);
+    }
+
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+            value = {"UNENCRYPTED_SOCKET"},
+            justification = "目前先使用http的方式请求，暂且不改为HTTPS")
+    public static String doPost(String host, String signValidateKey, String signValidatePublicKey, int port, String url, String body) {
         InputStream input = null;
         OutputStream output = null;
         Socket socket = null;
@@ -105,6 +138,14 @@ public abstract class HttpUtils {
                 request = request + "Content-Length: " + body.getBytes().length + "\r\n";
                 request = request + "Content-Type: application/json\r\n";
             }
+
+            StringBuilder validateKey = new StringBuilder();
+            long currentTimeMillis = System.currentTimeMillis();
+            if (body != null) {
+                validateKey.append(body);
+            }
+            request = sign(request, validateKey, currentTimeMillis, signValidateKey, signValidatePublicKey);
+
             request = request + "\r\n";
             output.write(request.getBytes(UTF_8));
 
@@ -141,6 +182,7 @@ public abstract class HttpUtils {
 
         }
     }
+
 
     public static String toString(InputStream input) throws IOException {
         ByteArrayOutputStream content = null;

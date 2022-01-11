@@ -111,6 +111,15 @@ public class PressureContext extends AbstractEntry {
     //请求头参数
     private HttpHeaderVariables httpHeaderVariables;
 
+    /**
+     * 签名校验私钥
+     */
+    private String signValidateKey;
+    /**
+     * 签名校验公钥
+     */
+    private String signValidatePublicKey;
+
 //    //业务活动信息
 //    private List<BusinessActivity> businessActivities;
 

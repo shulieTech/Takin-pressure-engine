@@ -424,6 +424,9 @@ public class Bootstrap {
         String pressureEngineBackendQueueCapacity = pressureConfig.getPressureEngineBackendQueueCapacity();
 
         context.setPressureEngineBackendQueueCapacity(pressureEngineBackendQueueCapacity);
+
+        context.setSignValidateKey(config.getSignValidateKey());
+        context.setSignValidatePublicKey(config.getSignValidatePublicKey());
     }
 
 }

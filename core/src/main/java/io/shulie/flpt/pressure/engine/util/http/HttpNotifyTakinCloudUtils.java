@@ -39,17 +39,20 @@ public class HttpNotifyTakinCloudUtils {
     private static Long sceneId;
     private static Long reportId;
     private static Long customerId;
+    private static String signValidateKey;
+    private static String signValidatePublicKey;
+
     private static Logger logger = LoggerFactory.getLogger(HttpNotifyTakinCloudUtils.class);
 
     public static void notifyTakinCloud(EngineStatusEnum statusEnum, String errMsg) {
         String podNumber = System.getProperty("pod.number");
-        HttpUtils.doPost(url, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
+        HttpUtils.doPost(url, signValidateKey, signValidatePublicKey, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
                 .podNum(podNumber == null ? "" : podNumber)
                 .status(
             statusEnum.getStatus()).msg(PRESSURE_ENGINE_EXCEPTION_PREFIX+errMsg).build()));
     }
     public static String getTakinCloud(EngineStatusEnum statusEnum) {
-       return HttpUtils.doPost(url, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId).status(
+       return HttpUtils.doPost(url, signValidateKey, signValidatePublicKey, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId).status(
             statusEnum.getStatus()).build()));
     }
 
@@ -59,11 +62,15 @@ public class HttpNotifyTakinCloudUtils {
             sceneId = config.getSceneId();
             reportId = config.getTaskId();
             customerId = config.getCustomerId();
+            signValidateKey = config.getSignValidateKey();
+            signValidatePublicKey = config.getSignValidatePublicKey();
         } else {
             url = Constants.TAKIN_TRO_URL;
             sceneId = 0L;
             reportId = 0L;
             customerId = 0L;
+            signValidateKey = null;
+            signValidatePublicKey = null;
         }
         logger.info("tro 交互url:{},场景:{},报告：{},客户:{}", url,sceneId,reportId,customerId);
     }
