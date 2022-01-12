@@ -125,6 +125,8 @@ public abstract class DomUtils {
             container.addElement("longProp").addAttribute("name", name).setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
         } else if (value instanceof String) {
             container.addElement("stringProp").addAttribute("name", name).setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
+        } else if (value instanceof Boolean) {
+            container.addElement("boolProp").addAttribute("name", name).setText(io.shulie.flpt.pressure.engine.util.StringUtils.valueOf(value));
         }
     }
 

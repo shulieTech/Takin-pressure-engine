@@ -38,6 +38,7 @@ import io.shulie.jmeter.tool.redis.RedisConfig;
 import io.shulie.jmeter.tool.redis.RedisUtil;
 import io.shulie.takin.constants.TakinRequestConstant;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.dom4j.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,6 +159,9 @@ public class ScriptModifier {
         //后端监听器
         addBackEndListener(testPlanContainer, sceneIdString, reportIdString, customerIdString, context);
 
+        //修改循环控制器中的LoopController.continue_forever参数为true（除非loops=-1）
+        modifyLoopControllerContinueForever(testPlanContainer);
+
 //        // 获取第三层
 //        List<Element> hashTree3Elements = DomUtils.elements(testPlanContainer, "hashTree");
 //        for (Element hashTree3Element : hashTree3Elements) {
@@ -265,6 +269,61 @@ public class ScriptModifier {
 //    }
 
     /**
+     * 填坑：循环控制器 LoopController.continue_forever=false时，会导致tps模式不受控制
+     */
+    public static void modifyLoopControllerContinueForever(Element element) {
+        if (null == element) {
+            return;
+        }
+        List<Element> chilElements = DomUtils.elements(element);
+        if (CollectionUtils.isEmpty(chilElements)) {
+            return;
+        }
+        for (Element e : chilElements) {
+            if (null == e) {
+                continue;
+            }
+            NodeTypeEnum type = NodeTypeEnum.value(e.getName());
+            if (null == type) {
+                continue;
+            }
+            if (NodeTypeEnum.CONTROLLER == type && "LoopController".equals(e.getName())) {
+                List<Element> propElements = DomUtils.elements(e);
+                if (CollectionUtils.isEmpty(propElements)) {
+                    continue;
+                }
+                Element continueForeverElement = null;
+                Boolean continueForever = null;
+                Integer loops = null;
+                for (Element prop : propElements) {
+                    if (null == prop) {
+                        continue;
+                    }
+                    if ("LoopController.continue_forever".equals(prop.attributeValue("name"))) {
+                        continueForeverElement = prop;
+                        continueForever = BooleanUtils.toBooleanObject(prop.getText());
+                    } else if ("LoopController.loops".equals(prop.attributeValue("name"))) {
+                        loops = NumberUtils.parseInt(prop.getText(), null);
+                    }
+                }
+                if (BooleanUtils.isNotTrue(continueForever)) {
+                    if (null == loops || -1 != loops) {
+                        if (null == continueForeverElement) {
+                            DomUtils.addBasePropElement(e,"LoopController.continue_forever", true);
+                        } else {
+                            continueForeverElement.setText("true");
+                        }
+                    }
+                }
+            }
+            if (NodeTypeEnum.TEST_PLAN == type || NodeTypeEnum.THREAD_GROUP == type || NodeTypeEnum.CONTROLLER == type) {
+                Element childElementContainer = DomUtils.findChildrenContainerElement(e);
+                modifyLoopControllerContinueForever(childElementContainer);
+            }
+        }
+    }
+
+    /**
      * 添加常量吞吐量定时器
      * @param threadGroupElement    线程组
      * @param context               参数
@@ -289,9 +348,9 @@ public class ScriptModifier {
 //        String transcation = DomUtils.getTransaction(threadGroupElement);
 //        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
         //常量吞吐量控制器
-//        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
+        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
         //精准吞吐量定时器
-        addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
+//        addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
     }
 
     public static boolean addPreciseThroughputTimer(List<Element> elements, PressureContext context, double factor, int threadNum) {
@@ -302,7 +361,12 @@ public class ScriptModifier {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
             if (null == type || type != NodeTypeEnum.SAMPLER) {
-                boolean isAdd = addPreciseThroughputTimer(DomUtils.elements(e), context, factor, threadNum);
+                Element hashTreeElement = DomUtils.findChildrenContainerElement(e);
+                List<Element> childElements = DomUtils.elements(hashTreeElement);
+                if (CollectionUtils.isEmpty(childElements)) {
+                    continue;
+                }
+                boolean isAdd = addPreciseThroughputTimer(childElements, context, factor, threadNum);
                 if (isAdd) {
                     return true;
                 } else {
@@ -344,9 +408,9 @@ public class ScriptModifier {
             return;
         }
         // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
-        Element samplerParent = samplerElement.getParent();
         Element samplerElementHashTree = DomUtils.findChildrenContainerElement(samplerElement);
         if (null == samplerElementHashTree) {
+            Element samplerParent = samplerElement.getParent();
             List<Element> elements = samplerParent.elements();
             int pos = elements.indexOf(samplerElement);
             samplerElementHashTree = samplerElement.addElement("hashTree");
@@ -392,14 +456,19 @@ public class ScriptModifier {
     /**
      * 添加常量吞吐量控制器
      */
-    public static void addConstantsThroughputControl(List<Element> elements, PressureContext context, double factor) {
+    public static boolean addConstantsThroughputControl(List<Element> elements, PressureContext context, double factor) {
         if (CollectionUtils.isEmpty(elements)) {
-            return;
+            return false;
         }
+        boolean isAdd = false;
         for (Element e : elements) {
+            if (null == e) {
+                continue;
+            }
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
-            if (null == type || type != NodeTypeEnum.SAMPLER) {
+            if (null == type || NodeTypeEnum.SAMPLER != type) {
+                addConstantsThroughputControl(DomUtils.elements(e), context, factor);
                 continue;
             }
             String transcation = DomUtils.getTransaction(e);
@@ -421,7 +490,9 @@ public class ScriptModifier {
             }
             //给第一个采样器添加常量吞吐量控制器
             addEachConstantsThroughputControl(e, throughput, percent, factor);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -447,9 +518,9 @@ public class ScriptModifier {
             return;
         }
         // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
-        Element samplerParent = samplerElement.getParent();
         Element samplerElementHashTree = DomUtils.findChildrenContainerElement(samplerElement);
         if (null == samplerElementHashTree) {
+            Element samplerParent = samplerElement.getParent();
             List<Element> elements = samplerParent.elements();
             int pos = elements.indexOf(samplerElement);
             samplerElementHashTree = samplerElement.addElement("hashTree");

@@ -17,7 +17,7 @@ public class NumberUtils {
         return parseInt(value, 0);
     }
 
-    public static int parseInt(Object obj, int defValue) {
+    public static Integer parseInt(Object obj, Integer defValue) {
         String value = StringUtils.valueOf(obj);
         if (StringUtils.isBlank(value)) {
             return defValue;
@@ -38,7 +38,7 @@ public class NumberUtils {
         return parseDouble(value, 0d);
     }
 
-    public static double parseDouble(Object obj, double defValue) {
+    public static Double parseDouble(Object obj, Double defValue) {
         String value = StringUtils.valueOf(obj);
         if (StringUtils.isBlank(value)) {
             return defValue;
