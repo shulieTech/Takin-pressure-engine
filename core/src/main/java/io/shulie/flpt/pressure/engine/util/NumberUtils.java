@@ -25,7 +25,7 @@ public class NumberUtils {
         if (value.contains(".")) {
             value = StringUtils.removePoint(value);
         }
-        int v = defValue;
+        Integer v = defValue;
         try {
             v = Integer.parseInt(value);
         } catch (Exception e) {
