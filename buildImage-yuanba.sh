@@ -33,8 +33,10 @@ GRADLE_HOME=~/.gradle/wrapper/dists/gradle-6.6-bin/dflktxzwamd4bv66q00iv4ga9/gra
 MAVEN_SETTINGS_PATH=~/.m2/settings.xml
 #压测引擎项目源码根目录
 PRESSURE_ENGINE_SOURCE_PATH=~/Documents/job2/Takin-pressure-engine
-#仓库地址
-HARBOR_IP=192.168.1.119
+#仓库地址 63环境
+#HARBOR_IP=192.168.1.119
+#225环境
+HARBOR_IP=192.168.1.89
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"
