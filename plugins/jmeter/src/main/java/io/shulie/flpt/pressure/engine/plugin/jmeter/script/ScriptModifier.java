@@ -1555,10 +1555,10 @@ public class ScriptModifier {
             logger.info("组装巡检模式添加固定定时器和断言");
             Element childrenContainerElement = DomUtils.findChildrenContainerElement(threadGroupElement);
             // 循环时间
-            //addFixedTimer(hashTree3Element, enginePressureParams.get("fixed_timer"));
+            addFixedTimer(childrenContainerElement, config.getFixedTimer());
             //modify by lipeng 20210609
             // 固定定时器只能按每个请求等待固定时间，这里巡检的需求是每个线程组每隔固定时间请求，所以这里改为flow controller action组件
-            addFlowControllerAction(childrenContainerElement, config.getFixedTimer());
+            //addFlowControllerAction(childrenContainerElement, config.getFixedTimer());
             //modify end;
             // 增加判断断言
             addFeanShellAssertion(childrenContainerElement);
