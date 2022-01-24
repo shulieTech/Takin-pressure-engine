@@ -1673,7 +1673,7 @@ public class ScriptModifier {
             .addAttribute("testname", "循环控制器")
             .addAttribute("enabled", "true");
         DomUtils.addBasePropElement(elementProp, "LoopController.continue_forever", false);
-        DomUtils.addBasePropElement(elementProp, "LoopController.loops", "1");
+        DomUtils.addBasePropElement(elementProp, "LoopController.loops", "-1");
 
         DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.same_user_on_next_iteration", true);
 
