@@ -70,13 +70,23 @@ public class JmeterPluginUtil {
                 }
             }
         }
+        if (null == stringWriter) {
+            logger.error("stringWriter is null!finalJmxFilePathName="+finalJmxFilePathName);
+            System.exit(-1);
+        }
 
         String finalStr = stringWriter.getString();
         finalStr = specialCharRepAfter(finalStr);
+
         /*
          * 写入最终压测文件
          */
         File file = FileUtils.createFileDE(finalJmxFilePathName);
+        if (null == file) {
+            logger.error("create file failed!finalJmxFilePathName="+finalJmxFilePathName);
+            System.exit(-1);
+        }
+
         FileWriter writer = null;
         try {
             writer = new FileWriter(file);
@@ -84,7 +94,7 @@ public class JmeterPluginUtil {
             writer.flush();
         } catch (Exception e) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, e.getMessage());
-            logger.warn(e.getMessage(), e);
+            logger.warn("write to file error! finalJmxFilePathName="+finalJmxFilePathName, e);
             System.exit(-1);
         } finally {
             if (writer != null) {

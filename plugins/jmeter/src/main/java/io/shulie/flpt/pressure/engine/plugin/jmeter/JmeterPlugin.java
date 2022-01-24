@@ -31,6 +31,7 @@ import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
 import io.shulie.flpt.pressure.engine.common.Constants;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.script.ScriptModifier;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.CommonUtil;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.DomUtils;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
 import io.shulie.flpt.pressure.engine.util.*;
@@ -327,7 +328,7 @@ public class JmeterPlugin implements PressurePlugin {
             , "-Djava.net.preferIPv4Addresses=true"
             , "-Dengine.perssure.mode=" + context.getPressureScene().getCode()
             ,"-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
-            , "-DCustomerId=" + customerId, "-DCallbackUrl=" + context.getCloudCallbackUrl()
+            , "-DCustomerId=" + customerId, "-DCallbackUrl='" + context.getCloudCallbackUrl()+"'"
             , "-DSamplingInterval=" + traceSampling};
         String[] jmeterParam = new String[]{"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
                 , "-j", jmeterLogFilePath, portRule};
@@ -349,9 +350,11 @@ public class JmeterPlugin implements PressurePlugin {
 
     private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args,String[] jmeterParam) {
         Integer duration = context.getDuration();
-        Long timeout = null;
-        if (null != duration) {
-            timeout = duration.longValue();
+        long timeout = CommonUtil.getValue(0L, duration, Integer::longValue);
+        if (0 >= timeout) {
+            timeout = 60L;
+        } else {
+            timeout += 10;
         }
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
         StringBuilder cmd = new StringBuilder();

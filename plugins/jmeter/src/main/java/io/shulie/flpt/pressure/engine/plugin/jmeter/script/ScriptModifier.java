@@ -698,7 +698,7 @@ public class ScriptModifier {
         bbeanShellStringProp1.addAttribute("name", "BeanShellAssertion.query");
         //modify by lipeng 特殊标记改为QUOTE_REPLACEMENT
         bbeanShellStringProp1.setText("log.info(" + JmeterPluginUtil.QUOTE_REPLACEMENT + "Current Sample Is Requested..."
-            + JmeterPluginUtil.QUOTE_REPLACEMENT + ")");
+            + JmeterPluginUtil.QUOTE_REPLACEMENT + ");");
         //        bbeanShellStringProp1.setText("log.info(\"hahahaha...\")");
         Element bbeanShellStringProp2 = beanShellAssertion.addElement("stringProp");
         bbeanShellStringProp2.addAttribute("name", "BeanShellAssertion.filename");
@@ -1550,7 +1550,7 @@ public class ScriptModifier {
             //将其下方内容清空
             threadGroupElement.clearContent();
             //构建巡检模式线程组，目前为普通线程组，以一定周期（5秒、10秒，可配置）、小流量（1并发）发起巡检请求
-            rebuildInspectionModeThreadGroupSubElements(threadGroupElement, inspectionAbility.getLoops());
+            rebuildInspectionModeThreadGroupSubElements(threadGroupElement, inspectionAbility.getDuration());
 
             logger.info("组装巡检模式添加固定定时器和断言");
             Element childrenContainerElement = DomUtils.findChildrenContainerElement(threadGroupElement);
@@ -1660,31 +1660,25 @@ public class ScriptModifier {
      *
      * @param threadGroupElement
      */
-    private static void rebuildInspectionModeThreadGroupSubElements(Element threadGroupElement,
-        Long loops) {
-        threadGroupElement.addElement("stringProp")
-            .addAttribute("name", "ThreadGroup.on_sample_error")
-            .setText("continue");
+    private static void rebuildInspectionModeThreadGroupSubElements(Element threadGroupElement, Integer duration) {
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.on_sample_error", "continue");
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.num_threads", "1");
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.ramp_time", "0");
 
-        threadGroupElement.addElement("elementProp")
+        Element elementProp = threadGroupElement.addElement("elementProp")
             .addAttribute("name", "ThreadGroup.main_controller")
             .addAttribute("elementType", "LoopController")
             .addAttribute("guiclass", "LoopControlPanel")
             .addAttribute("testclass", "LoopController")
             .addAttribute("testname", "循环控制器")
             .addAttribute("enabled", "true");
-        Element elementProp = threadGroupElement.element("elementProp");
-        elementProp.addElement("boolProp")
-            .addAttribute("name", "LoopController.continue_forever")
-            .setText("false");
+        DomUtils.addBasePropElement(elementProp, "LoopController.continue_forever", false);
+        DomUtils.addBasePropElement(elementProp, "LoopController.loops", "1");
+        DomUtils.addBasePropElement(elementProp, "ThreadGroup.same_user_on_next_iteration", true);
 
-        elementProp.addElement("stringProp").addAttribute("name", "LoopController.loops")
-            .setText(loops + "");
-        threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.num_threads").setText("1");
-        threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.ramp_time").setText("1");
-        threadGroupElement.addElement("boolProp").addAttribute("name", "ThreadGroup.scheduler").setText("false");
-        threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.duration");
-        threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.delay");
+        DomUtils.addBasePropElement(elementProp, "ThreadGroup.scheduler", true);
+        DomUtils.addBasePropElement(elementProp, "ThreadGroup.duration", StringUtils.valueOf(duration));
+        DomUtils.addBasePropElement(elementProp, "ThreadGroup.delay", "");
     }
 
     /**

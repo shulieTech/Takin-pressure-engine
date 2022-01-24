@@ -18,6 +18,7 @@ package io.shulie.flpt.pressure.engine.api.plugin;
 import io.shulie.flpt.pressure.engine.api.entity.*;
 import io.shulie.flpt.pressure.engine.api.enums.PressureSceneEnum;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.File;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map;
  * <p>
  * Create by xuyh at 2020/4/19 22:27.
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class PressureContext extends AbstractEntry {
     //场景id

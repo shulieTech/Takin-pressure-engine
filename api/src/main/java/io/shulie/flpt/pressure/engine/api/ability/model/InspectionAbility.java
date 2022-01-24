@@ -15,6 +15,8 @@
 
 package io.shulie.flpt.pressure.engine.api.ability.model;
 
+import lombok.Data;
+
 /**
  * 巡检能力
  *
@@ -23,19 +25,32 @@ package io.shulie.flpt.pressure.engine.api.ability.model;
  */
 public class InspectionAbility extends BaseAbility<InspectionAbility> {
 
-    //调试次数  默认1
-    private Long loops = 1L;
+    /**
+     * 巡检固定定时器配置的周期
+     */
+    private Long fixTimer;
+    /**
+     * 运行时间
+     */
+    private Integer duration;
 
     public InspectionAbility(String abilityName) {
         super(abilityName);
-    };
-
-    public Long getLoops() {
-        return loops;
+    }
+    public Long getFixTimer() {
+        return fixTimer;
+    }
+    public InspectionAbility setFixTimer(Long fixTimer) {
+        this.fixTimer = fixTimer;
+        return this;
     }
 
-    public InspectionAbility setLoops(Long loops) {
-        this.loops = loops;
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public InspectionAbility setDuration(Integer duration) {
+        this.duration = duration;
         return this;
     }
 

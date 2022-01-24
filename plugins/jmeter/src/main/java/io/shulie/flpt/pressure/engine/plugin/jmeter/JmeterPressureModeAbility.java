@@ -18,11 +18,9 @@ package io.shulie.flpt.pressure.engine.plugin.jmeter;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.model.*;
 import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
-import io.shulie.flpt.pressure.engine.api.enums.PressureTestModeEnum;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.JmeterConstants;
-import io.shulie.flpt.pressure.engine.util.StringUtils;
-import io.shulie.flpt.pressure.engine.util.TryUtils;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.CommonUtil;
 
 /**
  * jmeter支持的压力模式
@@ -108,12 +106,16 @@ public class JmeterPressureModeAbility implements EnginePressureModeAbility {
      */
     @Override
     public InspectionAbility inspectionModeAbility(PressureContext context) {
+        EnginePressureConfig config = context.getPressureConfig();
         return InspectionAbility.build(JmeterConstants.THREAD_GROUP_NAME)
                 .addExtraAttribute("guiclass", "ThreadGroupGui")
                 .addExtraAttribute("testclass", "ThreadGroup")
                 .addExtraAttribute("testname", "线程组")
                 .addExtraAttribute("enabled", "true")
-                .setLoops(context.getLoops());
+                //设置巡检间隔，默认是1秒
+                .setFixTimer(CommonUtil.getValue(1000L, config, EnginePressureConfig::getFixedTimer))
+                //设置运行时间，默认是100年
+                .setDuration(CommonUtil.getValue(3600*24*365*100, context, PressureContext::getDuration));
     }
 
 }

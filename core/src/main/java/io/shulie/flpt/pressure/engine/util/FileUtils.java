@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,10 @@ import java.util.Locale;
  */
 public class FileUtils {
     private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+
+    public static void main(String[] args) {
+        createFileDE("/home/opt/flpt/pressure-task/resources/final/test.jmx");
+    }
 
     public static File createFileDE(String filePathName) {
         File file = new File(filePathName);
@@ -107,11 +112,12 @@ public class FileUtils {
         }
         OutputStreamWriter writer = null;
         try {
-            writer = new OutputStreamWriter(new FileOutputStream(file), Charset.forName("UTF-8"));
+            writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
             writer.write(content);
             writer.flush();
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
+            return false;
         } finally {
             if (writer != null) {
                 try {
@@ -128,7 +134,7 @@ public class FileUtils {
         InputStreamReader reader = null;
         StringBuilder stringBuilder = new StringBuilder();
         try {
-            reader = new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8"));
+            reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
             char[] buffer = new char[32];
             int length;
             while ((length = reader.read(buffer)) > 0) {

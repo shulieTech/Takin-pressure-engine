@@ -42,8 +42,7 @@ public class Constants {
      *     "/home/opt/flpt/pressure-task"
      * </pre>
      */
-    public static String PRESSURE_TASK_DIR = EngineConfigurations
-            .getProperty("pressure.task.dir", "/home/opt/flpt/pressure-task");
+    public static String PRESSURE_TASK_DIR = EngineConfigurations.getProperty("pressure.task.dir", "/home/opt/flpt/pressure-task");
 
     /**
      * 日志目录
