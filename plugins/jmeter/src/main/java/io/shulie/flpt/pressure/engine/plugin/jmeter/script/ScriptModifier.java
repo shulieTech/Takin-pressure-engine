@@ -1674,11 +1674,12 @@ public class ScriptModifier {
             .addAttribute("enabled", "true");
         DomUtils.addBasePropElement(elementProp, "LoopController.continue_forever", false);
         DomUtils.addBasePropElement(elementProp, "LoopController.loops", "1");
-        DomUtils.addBasePropElement(elementProp, "ThreadGroup.same_user_on_next_iteration", true);
 
-        DomUtils.addBasePropElement(elementProp, "ThreadGroup.scheduler", true);
-        DomUtils.addBasePropElement(elementProp, "ThreadGroup.duration", StringUtils.valueOf(duration));
-        DomUtils.addBasePropElement(elementProp, "ThreadGroup.delay", "");
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.same_user_on_next_iteration", true);
+
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.scheduler", true);
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.duration", StringUtils.valueOf(duration));
+        DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.delay", "");
     }
 
     /**
