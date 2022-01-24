@@ -22,6 +22,9 @@ import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.consts.JmeterConstants;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.CommonUtil;
 
+import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
+
 /**
  * jmeter支持的压力模式
  *
@@ -115,7 +118,7 @@ public class JmeterPressureModeAbility implements EnginePressureModeAbility {
                 //设置巡检间隔，默认是1秒
                 .setFixTimer(CommonUtil.getValue(1000L, config, EnginePressureConfig::getFixedTimer))
                 //设置运行时间，默认是100年
-                .setDuration(CommonUtil.getValue(3600*24*365*100, context, PressureContext::getDuration));
+                .setDuration(CommonUtil.getValue(3600*24*365*100L, context, PressureContext::getDuration));
     }
 
 }

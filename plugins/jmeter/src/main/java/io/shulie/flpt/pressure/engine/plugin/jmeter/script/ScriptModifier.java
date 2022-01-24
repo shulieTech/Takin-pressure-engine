@@ -1253,7 +1253,7 @@ public class ScriptModifier {
      * @param steps
      * @param holdTime
      */
-    private static void rebuildCommonThreadGroupSubElements(Element threadGroupElement, String threadNum, Integer rampUp, Integer steps, Integer holdTime) {
+    private static void rebuildCommonThreadGroupSubElements(Element threadGroupElement, String threadNum, Integer rampUp, Integer steps, Long holdTime) {
         threadGroupElement.addElement("elementProp")
             .addAttribute("name", "ThreadGroup.main_controller")
             .addAttribute("elementType", "com.blazemeter.jmeter.control.VirtualUserController");
@@ -1352,7 +1352,7 @@ public class ScriptModifier {
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
         Integer steps = tgConfig.getSteps();
         Integer rampUp = tgConfig.getRampUp();
-        Integer holdTime = context.getDuration();
+        Long holdTime = context.getDuration();
         if (null != context.getPodCount() && context.getPodCount() > 1) {
             targetLevel = (int) Math.ceil((double)targetLevel/context.getPodCount());
         }
@@ -1402,7 +1402,7 @@ public class ScriptModifier {
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
         Integer steps = tgConfig.getSteps();
         Integer rampUp = tgConfig.getRampUp();
-        Integer holdTime = context.getDuration();
+        Long holdTime = context.getDuration();
         if (null != context.getPodCount() && context.getPodCount() > 1) {
             tpsTargetLevel = tpsTargetLevel/context.getPodCount();
         }
@@ -1479,7 +1479,7 @@ public class ScriptModifier {
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
         Integer steps = tgConfig.getSteps();
         Integer rampUp = tgConfig.getRampUp();
-        Integer holdTime = context.getDuration();
+        Long holdTime = context.getDuration();
         if (null != context.getPodCount() && context.getPodCount() > 1) {
             tpsTargetLevel = tpsTargetLevel/context.getPodCount();
         }
@@ -1660,7 +1660,7 @@ public class ScriptModifier {
      *
      * @param threadGroupElement
      */
-    private static void rebuildInspectionModeThreadGroupSubElements(Element threadGroupElement, Integer duration) {
+    private static void rebuildInspectionModeThreadGroupSubElements(Element threadGroupElement, Long duration) {
         DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.on_sample_error", "continue");
         DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.num_threads", "1");
         DomUtils.addBasePropElement(threadGroupElement, "ThreadGroup.ramp_time", "0");

@@ -54,7 +54,7 @@ public class EngineRunConfig extends AbstractEntry {
     /**
      * 压测时长
      */
-    private Integer continuedTime;
+    private Long continuedTime;
     /**
      * 并发线程数
      */

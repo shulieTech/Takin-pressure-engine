@@ -32,7 +32,7 @@ public class InspectionAbility extends BaseAbility<InspectionAbility> {
     /**
      * 运行时间
      */
-    private Integer duration;
+    private Long duration;
 
     public InspectionAbility(String abilityName) {
         super(abilityName);
@@ -45,11 +45,11 @@ public class InspectionAbility extends BaseAbility<InspectionAbility> {
         return this;
     }
 
-    public Integer getDuration() {
+    public Long getDuration() {
         return duration;
     }
 
-    public InspectionAbility setDuration(Integer duration) {
+    public InspectionAbility setDuration(Long duration) {
         this.duration = duration;
         return this;
     }

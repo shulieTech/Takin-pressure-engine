@@ -349,8 +349,7 @@ public class JmeterPlugin implements PressurePlugin {
     }
 
     private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args,String[] jmeterParam) {
-        Integer duration = context.getDuration();
-        long timeout = CommonUtil.getValue(0L, duration, Integer::longValue);
+        long timeout = CommonUtil.getValue(0L, context, PressureContext::getDuration);
         if (0 >= timeout) {
             timeout = 60L;
         } else {

@@ -54,7 +54,7 @@ public class PressureContext extends AbstractEntry {
      */
     private boolean oldVersion;
     //运行时间
-    private Integer duration;
+    private Long duration;
     //引擎插件路径
     private List<String> enginePluginsFilePath;
 //    //施压模式   固定压力值  线性递增  阶梯递增
