@@ -350,9 +350,7 @@ public class JmeterPlugin implements PressurePlugin {
 
     private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args,String[] jmeterParam) {
         long timeout = CommonUtil.getValue(0L, context, PressureContext::getDuration);
-        if (0 >= timeout) {
-            timeout = 60L;
-        } else {
+        if (0 < timeout) {
             timeout += 10;
         }
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
@@ -389,7 +387,7 @@ public class JmeterPlugin implements PressurePlugin {
         logger.info("cmd:");
         logger.info(cmd.toString());
         int exitValue = ProcessUtils.run(
-                cmd.toString(), binDir, timeout + 10,
+                cmd.toString(), binDir, timeout,
                 process -> jmeterProcess = process,
                 message -> logger.info(message)
         );
