@@ -1550,7 +1550,7 @@ public class ScriptModifier {
             //将其下方内容清空
             threadGroupElement.clearContent();
             //构建巡检模式线程组，目前为普通线程组，以一定周期（5秒、10秒，可配置）、小流量（1并发）发起巡检请求
-            rebuildInspectionModeThreadGroupSubElements(threadGroupElement, inspectionAbility.getLoops());
+            rebuildInspectionModeThreadGroupSubElements(threadGroupElement, config.getLoopsNum());
 
             logger.info("组装巡检模式添加固定定时器和断言");
             Element childrenContainerElement = DomUtils.findChildrenContainerElement(threadGroupElement);
