@@ -1677,9 +1677,8 @@ public class ScriptModifier {
         elementProp.addElement("boolProp")
             .addAttribute("name", "LoopController.continue_forever")
             .setText("false");
-
         elementProp.addElement("stringProp").addAttribute("name", "LoopController.loops")
-            .setText(loops + "");
+            .setText("-1");
         threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.num_threads").setText("1");
         threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.ramp_time").setText("1");
         threadGroupElement.addElement("boolProp").addAttribute("name", "ThreadGroup.scheduler").setText("false");
