@@ -34,6 +34,7 @@ POD_NUM=${POD_NUMBER}
 
 DEBUG=0
 FOREGROUND=0
+ENGINE_LOG_DIR="${BASE_DIR}/logs"
 
 echo ""
 echo ""
@@ -41,7 +42,7 @@ echo "-------------------------------------------"
 echo "${BEGIN_TIME}"
 echo "start params: $*"
 
-while getopts ':t:c:d:f:m:' OPTION;do
+while getopts ':t:c:d:f:m:l:' OPTION;do
     case ${OPTION} in
         t)
             ENGINE_TYPE=${OPTARG}
@@ -57,6 +58,9 @@ while getopts ':t:c:d:f:m:' OPTION;do
             ;;
         m)
             START_MODE=${OPTARG}
+            ;;
+        l)
+            ENGINE_LOG_DIR=${OPTARG}
             ;;
         ?)
             echo -n ""
@@ -75,7 +79,7 @@ if [[ ${ENGINE_TYPE} = "" ]]; then
 fi
 
 # 目录检查
-ENGINE_LOG_DIR="${BASE_DIR}/logs"
+#ENGINE_LOG_DIR="${BASE_DIR}/logs"
 LOG_DIR="/home/opt/flpt/pressure-task/logs"
 RES_DIR="/home/opt/flpt/pressure-task/resources"
 if [[ -e ${ENGINE_LOG_DIR} ]]; then
@@ -100,6 +104,7 @@ fi
 CLASSPATH=${CLASSPATH}
 CLASSPATH="${CLASSPATH}:${BASE_DIR}/lib/*"
 JAVA_OPTS="-Dwork.dir=${BASE_DIR}"
+JAVA_OPTS="${JAVA_OPTS} -DengineLog.dir=${ENGINE_LOG_DIR}"
 JAVA_OPTS="${JAVA_OPTS} -Dengine.type=${ENGINE_TYPE}"
 JAVA_OPTS="${JAVA_OPTS} -Dconfigurations=${CONFIGURATIONS}"
 JAVA_OPTS="${JAVA_OPTS} -Dstart.mode=${START_MODE}"
