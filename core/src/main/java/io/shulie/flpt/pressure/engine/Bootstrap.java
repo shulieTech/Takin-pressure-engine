@@ -16,7 +16,6 @@
 package io.shulie.flpt.pressure.engine;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.JsonObject;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
 import io.shulie.flpt.pressure.engine.api.constants.EngineConstants;
@@ -25,7 +24,6 @@ import io.shulie.flpt.pressure.engine.api.enums.PressureSceneEnum;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.api.plugin.PressurePlugin;
-import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
 import io.shulie.flpt.pressure.engine.common.Constants;
 import io.shulie.flpt.pressure.engine.api.entity.EngineRunConfig;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
@@ -39,10 +37,7 @@ import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Create by xuyh at 2020/4/17 21:59.
@@ -153,25 +148,25 @@ public class Bootstrap {
         //添加中断监听 modify by lipeng
         //用于检测cloud是否进行了中断操作
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(THREAD_NAME_FORMAT).build();
-        ScheduledExecutorService scheduExec = new ScheduledThreadPoolExecutor(SCHEDULED_THREAD_CORE_SIZE, threadFactory);
-        scheduExec.scheduleAtFixedRate(() -> {
-            String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT);
-            logger.info("获取中断状态：{}", result);
-            JsonObject jsonObject = GsonUtils.json2Obj(result, JsonObject.class);
-            if (jsonObject != null && jsonObject.get("data").getAsBoolean()) {
-                //发生中断  获取事件
-                StopResponse response = pressurePlugin.stopPressureTest(context);
-                if (response != null) {
-                    if (response.getExitValue() > -1) {
-                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED, response.getMessage());
-                        //销毁线程池
-                        scheduExec.shutdown();
-                    } else {
-                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_FAILED, response.getMessage());
-                    }
-                }
-            }
-        }, SCHEDULED_INITIAL_DELAY, SCHEDULED_PERIOD, TimeUnit.SECONDS);
+//        ScheduledExecutorService scheduExec = new ScheduledThreadPoolExecutor(SCHEDULED_THREAD_CORE_SIZE, threadFactory);
+//        scheduExec.scheduleAtFixedRate(() -> {
+//            String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT);
+//            logger.info("获取中断状态：{}", result);
+//            JsonObject jsonObject = GsonUtils.json2Obj(result, JsonObject.class);
+//            if (jsonObject != null && jsonObject.get("data").getAsBoolean()) {
+//                //发生中断  获取事件
+//                StopResponse response = pressurePlugin.stopPressureTest(context);
+//                if (response != null) {
+//                    if (response.getExitValue() > -1) {
+//                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED, response.getMessage());
+//                        //销毁线程池
+//                        scheduExec.shutdown();
+//                    } else {
+//                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_FAILED, response.getMessage());
+//                    }
+//                }
+//            }
+//        }, SCHEDULED_INITIAL_DELAY, SCHEDULED_PERIOD, TimeUnit.SECONDS);
 
         //add start by lipeng 初始化引擎插件 (非必须，只有第三方插件需要支持)
         try {
@@ -294,6 +289,10 @@ public class Bootstrap {
     }
 
     private static void initialPressureContext(EngineRunConfig config) {
+        if (null == config) {
+            logger.error("config is null!");
+            System.exit(-1);
+        }
         Long sceneId = config.getSceneId();
         if(null == sceneId || 0 == sceneId) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "无效的场景id参数");

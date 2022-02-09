@@ -1,6 +1,7 @@
 package io.shulie.flpt.pressure.engine.api.entity;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 import java.util.Map;
@@ -9,12 +10,17 @@ import java.util.Map;
  * @Author: liyuanba
  * @Date: 2021/10/29 3:11 下午
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class EnginePressureConfig extends AbstractEntry {
     /**
      * 后端监听器对列长度
      */
     private String pressureEngineBackendQueueCapacity;
+    /**
+     * redis库
+     */
+    private Integer engineRedisDatabase;
     /**
      * redis地址
      */
