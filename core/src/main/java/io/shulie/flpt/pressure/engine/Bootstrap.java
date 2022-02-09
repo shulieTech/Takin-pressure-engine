@@ -372,7 +372,8 @@ public class Bootstrap {
             logger.warn("当前引擎压测模式参数'{}'不在支持的范围内，已将引擎压测模式更改为并发模式", pressureScene);
             pressureSceneEnum = PressureSceneEnum.DEFAULT;
         }
-        if (pressureSceneEnum == PressureSceneEnum.TRY_RUN){
+        if (pressureSceneEnum == PressureSceneEnum.TRY_RUN || pressureSceneEnum == PressureSceneEnum.INSPECTION_MODE){
+            context.setFix(config.getPressureConfig().getFixedTimer());
             context.setLoops(config.getPressureConfig().getLoopsNum());
         }
         context.setPressureScene(pressureSceneEnum);

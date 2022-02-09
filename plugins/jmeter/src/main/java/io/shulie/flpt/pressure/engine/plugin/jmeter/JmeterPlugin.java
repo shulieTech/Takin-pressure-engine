@@ -120,35 +120,7 @@ public class JmeterPlugin implements PressurePlugin {
         argsList.add("-DengineRedisSentinelMaster=" + pressureConfig.getEngineRedisSentinelMaster());
         argsList.add("-DengineRedisPassword=" + pressureConfig.getEngineRedisPassword());
 
-//        Map<String, Object> enginePressureParams = TryUtils.tryOperation(
-//                () -> (Map<String, Object>)params.get("enginePressureParams"));
 
-//        if (enginePressureParams != null && !enginePressureParams.isEmpty()){
-//            String ptlLogConfig = TryUtils.tryOperation(() -> String.valueOf(enginePressureParams.get("ptlLogConfig")));
-//            Map<String, Object> ptlLogConfigMap = JSON.parseObject(ptlLogConfig, Map.class);
-//            if (ptlLogConfigMap != null && ptlLogConfigMap.size() > 0) {
-//                for(Map.Entry<String, Object> entry : ptlLogConfigMap.entrySet()) {
-//                    argsList.add("-Dptl."+entry.getKey()+"=" + entry.getValue());
-//                }
-//            }
-//            //设置上传队列大小
-//            argsList.add("-DlogQueueSize=" + enginePressureParams.get("logQueueSize"));
-//            argsList.add("-DzkServers=" + enginePressureParams.get("zkServers"));
-//
-//            argsList.add("-DengineRedisAddress=" + enginePressureParams.get("engineRedisAddress"));
-//            argsList.add("-DengineRedisPort=" + enginePressureParams.get("engineRedisPort"));
-//            argsList.add("-DengineRedisSentinelNodes=" + enginePressureParams.get("engineRedisSentinelNodes"));
-//            argsList.add("-DengineRedisSentinelMaster=" + enginePressureParams.get("engineRedisSentinelMaster"));
-//            argsList.add("-DengineRedisPassword=" + enginePressureParams.get("engineRedisPassword"));
-//        }
-
-//        if (businessMap != null) {
-//            for (Map.Entry<String, String> entry : businessMap.entrySet()) {
-//                String key = entry.getKey();
-//                String value = entry.getValue();
-//                argsList.add("-D" + key + "_rt=" + value);
-//            }
-//        }
         String[] args = new String[argsList.size()];
         for (int i = 0; i < argsList.size(); i++) {
             args[i] = argsList.get(i);
