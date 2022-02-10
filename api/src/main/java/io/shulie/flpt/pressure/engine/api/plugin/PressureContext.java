@@ -70,6 +70,10 @@ public class PressureContext extends AbstractEntry {
     private Long loops;
     //metric上报数据url
     private String metricCollectorUrl;
+    /**
+     * 和cloud消息互通方法：http、message
+     */
+    private String notifyMethod;
     //额外参数，目前这里是记录业务活动对应的目标rt
     private Map<String, BusinessActivityConfig> businessMap;
     /**

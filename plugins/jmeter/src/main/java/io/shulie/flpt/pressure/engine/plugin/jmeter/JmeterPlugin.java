@@ -302,7 +302,7 @@ public class JmeterPlugin implements PressurePlugin {
             , "-Dengine.perssure.mode=" + context.getPressureScene().getCode()
             ,"-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
             , "-DCustomerId=" + customerId, "-DCallbackUrl='" + context.getCloudCallbackUrl()+"'"
-            , "-DSamplingInterval=" + traceSampling};
+            , "-DSamplingInterval=" + traceSampling, "-Dengine.notify.method="+context.getNotifyMethod()};
         String[] jmeterParam = new String[]{"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
                 , "-j", jmeterLogFilePath, portRule};
         //组装后端监听器参数
