@@ -12,4 +12,4 @@ ENV TZ Asia/Shanghai
 ENV engineType="jmeter"
 ENV confPath="/etc/engine/config/engine.conf"
 EXPOSE 8087
-ENTRYPOINT ["sh", "-c", "/bin/sh /home/opt/flpt/pressure-engine/bin/start.sh -t $engineType -c $confPath -f y"]
+ENTRYPOINT ["sh", "-c", "/bin/sh /home/opt/flpt/pressure-engine/bin/start.sh -t $engineType -c $confPath -l $engineLogPath -f y"]

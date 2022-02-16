@@ -25,15 +25,14 @@
     </appender>
 
     <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${work.dir}/logs/pressure-engine-${current.pid}.log</file>
+        <file>${engineLog.dir}/pressure-engine-pod-${pod.number}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>${work.dir}/logs/pressure-engine-${current.pid}.%i.log</FileNamePattern>
-<!--            <FileNamePattern>/etc/engine/script/logs/pressure-engine-${current.pid}.%i.log</FileNamePattern>-->
+            <FileNamePattern>${engineLog.dir}/pressure-engine-pod-${pod.number}.%i.log</FileNamePattern>
             <minIndex>1</minIndex>
             <maxIndex>10</maxIndex>
         </rollingPolicy>
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <maxFileSize>1MB</maxFileSize>
+            <maxFileSize>10MB</maxFileSize>
         </triggeringPolicy>
         <encoder>
             <charset>UTF-8</charset>
