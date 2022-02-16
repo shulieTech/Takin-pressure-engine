@@ -99,7 +99,9 @@ fi
 
 CLASSPATH=${CLASSPATH}
 CLASSPATH="${CLASSPATH}:${BASE_DIR}/lib/*"
-JAVA_OPTS="-Dwork.dir=${BASE_DIR}"
+#java内存=heap(64M) + stack(256K*线程数) + metaspaceSize(16M) + directMemory(16M) = 96M+256k*线程数
+JAVA_OPTS="-Xmx64m -Xss256K -XX:MaxMetaspaceSize=32m -XX:MaxDirectMemorySize=16m"
+JAVA_OPTS="${JAVA_OPTS} -Dwork.dir=${BASE_DIR}"
 JAVA_OPTS="${JAVA_OPTS} -Dengine.type=${ENGINE_TYPE}"
 JAVA_OPTS="${JAVA_OPTS} -Dconfigurations=${CONFIGURATIONS}"
 JAVA_OPTS="${JAVA_OPTS} -Dstart.mode=${START_MODE}"
