@@ -80,8 +80,10 @@ public class ProcessUtils {
                 });
             }
             if (timeout == null || timeout <= 0) {
+                logger.info("wait for no timeout!");
                 status = process.waitFor();
             } else {
+                logger.info("wait for "+timeout+" "+TimeUnit.SECONDS.name());
                 if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
                     throw new RuntimeException(String.format("Command run timeout, timeout: %s, command: %s", timeout, GsonUtils.obj2Json(commands)));
                 } else {

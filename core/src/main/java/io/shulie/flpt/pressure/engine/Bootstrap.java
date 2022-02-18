@@ -233,6 +233,8 @@ public class Bootstrap {
             logger.warn("Pressure finish failed");
             System.exit(-1);
         }
+        logger.info("System.exit 0");
+        System.exit(0);
     }
 
     private static void handleScriptPath(PressureContext context) {

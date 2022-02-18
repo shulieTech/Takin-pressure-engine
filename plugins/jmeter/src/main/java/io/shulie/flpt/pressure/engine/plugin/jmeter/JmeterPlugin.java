@@ -369,6 +369,7 @@ public class JmeterPlugin implements PressurePlugin {
         // mark by lipeng
         logger.info("Jmeter run finished, exit value: {}", exitValue);
         TryUtils.retry(() -> {
+            logger.info("jmeterProcess="+jmeterProcess);
             jmeterProcess.destroyForcibly();
             sleep(3_000);
             if (jmeterProcess.isAlive()) {
