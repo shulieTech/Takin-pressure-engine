@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>assembly</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <!-- 是否包含基本目录 -->
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>./</directory>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0766</fileMode>
+            <!-- 排除的文件 -->
+            <excludes>
+                <!-- 项目文件 -->
+                <exclude>pom.xml</exclude>
+                <exclude>clean.sh</exclude>
+                <exclude>.gitignore</exclude>
+                <exclude>assembly.xml</exclude>
+                <!-- 临时文件 -->
+                <exclude>target/**</exclude>
+                <exclude>config/LICENSE</exclude>
+                <exclude>config/checkstyle/**</exclude>
+                <exclude>config/license.header.java</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+</assembly>

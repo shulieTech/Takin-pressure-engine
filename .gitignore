@@ -1,18 +1,13 @@
-/target/
-api/target/
-/.settings/
-.classpath
+# IDEA
+**/*.iml
+**/.idea
+# 制品及日志
+**/logs
+**/target
+# 零散项
 .project
-/.idea/
-/logs/
-*.iml
-/jmeter/pressure-engine-jmeter/target/
-/jmeter/pressure-engine-jmeter/.idea/
-/work.dir_IS_UNDEFINED/
-/jmeter/pressure-engine-jmeter/lib/jmeter/build/
-/jmeter/pressure-engine-jmeter/lib/jmeter/buildSrc/
-/jmeter/pressure-engine-jmeter/lib/jmeter/buildSrc/subprojects/
-/jmeter/pressure-engine-jmeter/lib/jmeter/buildSrc/build/
-/jmeter/pressure-engine-jmeter/lib/jmeter/build/checksum/keystore/
-/jmeter/jmeter.zip
-/core/work.dir_IS_UNDEFINED/
+.DS_Store
+.classpath
+/.settings/
+# 项目定制
+/.build

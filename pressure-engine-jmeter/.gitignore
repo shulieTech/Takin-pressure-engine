@@ -1,0 +1,5 @@
+**/**
+!pom.xml
+!clean.sh
+!assembly.xml
+!.gitignore

@@ -1,5 +1,19 @@
 # Takin-pressure-engine
 
+# 构建制品
+
+## 构建tar包
+
+```sh ./buildTar.sh```
+
+<strong>脚本配置项:JMETER_SOURCE_PATH<strong>
+
+## 构建docker镜像
+
+```sh ./buildImage.sh```
+
+<strong>脚本配置项:DOCKER_NAME<strong>
+
 # start.sh 使用方式
 
 ## 本地开发调试

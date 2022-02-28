@@ -1,8 +1,0 @@
-/target/
-api/target/
-/.settings/
-.classpath
-.project
-/.idea/
-/logs/
-*.iml
