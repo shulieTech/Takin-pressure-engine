@@ -1,41 +1,27 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.plugin.jmeter.util;
 
-import io.shulie.flpt.pressure.engine.common.Constants;
-import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
-import io.shulie.flpt.pressure.engine.util.FileUtils;
-import io.shulie.flpt.pressure.engine.util.StringWriter;
-import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
-import org.dom4j.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
+import java.net.Socket;
 import java.io.FileWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
+
+import org.dom4j.Document;
+
+import lombok.extern.slf4j.Slf4j;
+
+import io.shulie.flpt.pressure.engine.util.FileUtils;
+import io.shulie.flpt.pressure.engine.common.Constants;
+import io.shulie.flpt.pressure.engine.util.StringWriter;
+import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
+import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
 
 /**
  * @author hezhongqi
  */
+@Slf4j
 public class JmeterPluginUtil {
 
-    private static Logger logger = LoggerFactory.getLogger(JmeterPluginUtil.class);
     private static final String LESS_THAN = "&lt;";
     private static final String LESS_THAN_REPLACEMENT = "SHULIE_LESS_THAN_FLAG";
     private static final String GREATER_THAN = "&gt;";
@@ -50,9 +36,9 @@ public class JmeterPluginUtil {
     /**
      * 写入最终文件
      *
-     * @param document
-     * @param finalJmxFilePathName
-     * @return
+     * @param document             脚本文档
+     * @param finalJmxFilePathName 保存路径
+     * @return -
      */
     public static String writeToFinalFile(Document document, String finalJmxFilePathName) {
         StringWriter stringWriter = null;
@@ -60,13 +46,13 @@ public class JmeterPluginUtil {
             stringWriter = new StringWriter();
             document.write(stringWriter);
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         } finally {
             if (stringWriter != null) {
                 try {
                     stringWriter.close();
                 } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
+                    log.warn(e.getMessage(), e);
                 }
             }
         }
@@ -76,7 +62,7 @@ public class JmeterPluginUtil {
         /*
          * 写入最终压测文件
          */
-        File file = FileUtils.createFileDE(finalJmxFilePathName);
+        File file = FileUtils.createFilePreDelete(finalJmxFilePathName);
         FileWriter writer = null;
         try {
             writer = new FileWriter(file);
@@ -84,14 +70,14 @@ public class JmeterPluginUtil {
             writer.flush();
         } catch (Exception e) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, e.getMessage());
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             System.exit(-1);
         } finally {
             if (writer != null) {
                 try {
                     writer.close();
                 } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
+                    log.warn(e.getMessage(), e);
                 }
             }
         }
@@ -111,7 +97,7 @@ public class JmeterPluginUtil {
         //jmeter home目录
         String jmeterHomeFolder = System.getProperty("jmeter.home");
         if (!enginePluginFilePath.startsWith(Constants.ENGINE_NFS_MOUNTED_PATH)) {
-            if(enginePluginFilePath.startsWith("/")) {
+            if (enginePluginFilePath.startsWith("/")) {
                 pluginJarPath = jmeterHomeFolder + enginePluginFilePath;
             } else {
                 pluginJarPath = jmeterHomeFolder + File.separator + enginePluginFilePath;
@@ -124,12 +110,12 @@ public class JmeterPluginUtil {
         if (file != null) {
             //获取jmeter lib路径
             String jmeterPluginsFolder = jmeterHomeFolder
-                    + File.separator + "lib" + File.separator + "ext";
+                + File.separator + "lib" + File.separator + "ext";
             try {
                 FileUtils.copyFileToDirectory(file, jmeterPluginsFolder);
             } catch (Exception e) {
                 e.printStackTrace();
-                logger.warn("插件文件[" + file.getName() + "]不是jar文件，已忽略。");
+                log.warn("插件文件[" + file.getName() + "]不是jar文件，已忽略。");
             }
         }
     }

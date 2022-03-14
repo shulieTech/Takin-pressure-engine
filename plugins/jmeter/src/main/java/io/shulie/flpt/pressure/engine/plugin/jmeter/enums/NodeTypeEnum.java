@@ -7,8 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @Author: liyuanba
- * @Date: 2021/10/13 3:11 下午
+ * @author liyuanba
  */
 public enum NodeTypeEnum {
     /**
@@ -30,20 +29,19 @@ public enum NodeTypeEnum {
     ;
 
     @Getter
-    private String[] suffixes;
+    private final String[] suffixes;
 
-    NodeTypeEnum(String... suffixes){
-        this.suffixes = suffixes;
-    }
+    NodeTypeEnum(String... suffixes) {this.suffixes = suffixes;}
 
-    public static Map<String, NodeTypeEnum> pool = new HashMap<>();
+    public static final Map<String, NodeTypeEnum> POOL = new HashMap<>();
+
     static {
         for (NodeTypeEnum e : NodeTypeEnum.values()) {
             for (String suffix : e.getSuffixes()) {
-                if (pool.containsKey(suffix)) {
+                if (POOL.containsKey(suffix)) {
                     continue;
                 }
-                pool.put(suffix, e);
+                POOL.put(suffix, e);
             }
         }
     }
@@ -52,9 +50,9 @@ public enum NodeTypeEnum {
         if (StringUtils.isBlank(nodeName)) {
             return null;
         }
-        for (String suffix : pool.keySet()) {
+        for (String suffix : POOL.keySet()) {
             if (nodeName.endsWith(suffix)) {
-                return pool.get(suffix);
+                return POOL.get(suffix);
             }
         }
         return null;

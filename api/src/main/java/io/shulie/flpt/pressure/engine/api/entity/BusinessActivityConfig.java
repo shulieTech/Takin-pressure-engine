@@ -4,11 +4,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * @Author: liyuanba
- * @Date: 2021/11/8 2:09 下午
+ * 业务活动配置
+ *
+ * @author 杨俊毅
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class BusinessActivityConfig extends AbstractEntry {
     /**
      * 绑定关系

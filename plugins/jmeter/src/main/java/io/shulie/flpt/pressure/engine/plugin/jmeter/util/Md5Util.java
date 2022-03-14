@@ -10,14 +10,13 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 
 /**
- * @Author: liyuanba
- * @Date: 2021/10/20 1:45 下午
+ * @author 杨俊毅
  */
 public class Md5Util {
     /**
      * 区分大文件和一般文件界线
      */
-    public static final long BIG_File_SIZE = 1024*1024*500L;
+    public static final long BIG_FILE_SIZE = 1024 * 1024 * 500L;
     /**
      * 大文件采样分片数
      */
@@ -25,16 +24,15 @@ public class Md5Util {
     /**
      * 每个采样分片数大小
      */
-    public static final int PART_SIZE = 1024*1024;
+    public static final int PART_SIZE = 1024 * 1024;
 
     public static void main(String[] args) {
-//        String  file = "/Users/liyuanba/Downloads/data 2.csv";
-        String  file = "/Users/liyuanba/Downloads/data.csv";
-        System.out.println("fileSize="+new File(file).length());
-        System.out.println("md5="+md5(file));
+        String file = "/Users/liyuanba/Downloads/data.csv";
+        System.out.println("fileSize=" + new File(file).length());
+        System.out.println("md5=" + md5(file));
         long t = System.currentTimeMillis();
-        System.out.println("file md5="+md5File(file));
-        System.out.println("t="+(System.currentTimeMillis()-t));
+        System.out.println("file md5=" + md5File(file));
+        System.out.println("t=" + (System.currentTimeMillis() - t));
     }
 
     /**
@@ -59,7 +57,7 @@ public class Md5Util {
             return null;
         }
         long fileSize = file.length();
-        if (fileSize >= BIG_File_SIZE) {
+        if (fileSize >= BIG_FILE_SIZE) {
             return md5BigFile(file);
         } else {
             FileInputStream in = null;
@@ -89,24 +87,24 @@ public class Md5Util {
         try {
             long fileSize = file.length();
             long per = fileSize / BIG_FILE_PART;
-            String fileInfo = file.lastModified()+"|"+fileSize+"|";
-            MessageDigest MD5 = MessageDigest.getInstance("MD5");
-            MD5.update(fileInfo.getBytes());
+            String fileInfo = file.lastModified() + "|" + fileSize + "|";
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
+            md5.update(fileInfo.getBytes());
             fileInputStream = new FileInputStream(file);
             byte[] buffer = new byte[PART_SIZE];
-            for (int i=1; i<=BIG_FILE_PART; i++) {
-                long start = i == BIG_FILE_PART ? (fileSize-per*i)+per: per;
-                fileInputStream.skip(start-PART_SIZE);
+            for (int i = 1; i <= BIG_FILE_PART; i++) {
+                long start = i == BIG_FILE_PART ? (fileSize - per * i) + per : per;
+                fileInputStream.skip(start - PART_SIZE);
                 int length = fileInputStream.read(buffer);
-                MD5.update(buffer,0 ,length);
+                md5.update(buffer, 0, length);
             }
-            return new String(Hex.encodeHex(MD5.digest()));
+            return new String(Hex.encodeHex(md5.digest()));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         } finally {
             try {
-                if (null != fileInputStream){
+                if (null != fileInputStream) {
                     fileInputStream.close();
                 }
             } catch (IOException e) {

@@ -6,8 +6,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import java.io.Serializable;
 
 /**
- * @Author: liyuanba
- * @Date: 2021/10/26 10:54 上午
+ * @author 杨俊毅
  */
 public class AbstractEntry implements Serializable {
     @Override

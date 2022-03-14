@@ -1,28 +1,15 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.util.http;
 
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 
+/**
+ * @author 李鹏
+ */
 public class ChunkedInputStream extends InputStream {
 
-    private InputStream in;
+    private final InputStream in;
 
     private boolean closed = false;
 
@@ -42,6 +29,7 @@ public class ChunkedInputStream extends InputStream {
         this.pos = 0;
     }
 
+    @Override
     public int read() throws IOException {
         if (closed) {
             throw new IOException("Attempted read from closed stream.");
@@ -59,6 +47,7 @@ public class ChunkedInputStream extends InputStream {
         return in.read();
     }
 
+    @Override
     public int read(byte[] b, int off, int len) throws IOException {
 
         if (closed) {
@@ -80,16 +69,18 @@ public class ChunkedInputStream extends InputStream {
         return count;
     }
 
+    @Override
     public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
+    @SuppressWarnings("AlibabaLowerCamelCaseVariableNaming")
     private void readCRLF() throws IOException {
         int cr = in.read();
         int lf = in.read();
         if ((cr != '\r') || (lf != '\n')) {
             throw new IOException(
-                    "CRLF expected at end of chunk: " + cr + "/" + lf);
+                "CRLF expected at end of chunk: " + cr + "/" + lf);
         }
     }
 
@@ -107,14 +98,12 @@ public class ChunkedInputStream extends InputStream {
     }
 
     private static int getChunkSizeFromInputStream(final InputStream in)
-            throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         int state = 0;
         while (state != -1) {
             int b = in.read();
-            if (b == -1) {
-                throw new IOException("chunked stream ended unexpectedly");
-            }
+            if (b == -1) {throw new IOException("chunked stream 意外地结束");}
             switch (state) {
                 case 0:
                     switch (b) {
@@ -125,31 +114,28 @@ public class ChunkedInputStream extends InputStream {
                             state = 2;
                             /* fall through */
                         default:
-                            baos.write(b);
+                            outputStream.write(b);
+                            break;
                     }
                     break;
 
                 case 1:
-                    if (b == '\n') {
-                        state = -1;
-                    } else {
-                        // this was not CRLF
-                        throw new IOException("Protocol violation: Unexpected"
-                                + " single newline character in chunk size");
-                    }
+                    if (b == '\n') {state = -1;}
+                    // 这不是CRLF
+                    else {throw new IOException("违反协议: 意外的单个换行符.(非\r\n,例如\r\r等)");}
                     break;
-
                 case 2:
                     switch (b) {
                         case '\\':
                             b = in.read();
-                            baos.write(b);
+                            outputStream.write(b);
                             break;
                         case '\"':
                             state = 0;
                             /* fall through */
                         default:
-                            baos.write(b);
+                            outputStream.write(b);
+                            break;
                     }
                     break;
                 default:
@@ -158,11 +144,9 @@ public class ChunkedInputStream extends InputStream {
         }
 
         //parse data
-        String dataString = new String(baos.toByteArray(), "US-ASCII");
+        String dataString = outputStream.toString("US-ASCII");
         int separator = dataString.indexOf(';');
-        dataString = (separator > 0)
-                ? dataString.substring(0, separator).trim()
-                : dataString.trim();
+        dataString = (separator > 0) ? dataString.substring(0, separator).trim() : dataString.trim();
 
         int result;
         try {
@@ -173,6 +157,7 @@ public class ChunkedInputStream extends InputStream {
         return result;
     }
 
+    @Override
     public void close() throws IOException {
         if (!closed) {
             try {
@@ -185,5 +170,4 @@ public class ChunkedInputStream extends InputStream {
             }
         }
     }
-
 }

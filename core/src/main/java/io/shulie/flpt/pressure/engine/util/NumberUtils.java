@@ -1,16 +1,17 @@
 package io.shulie.flpt.pressure.engine.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @author 李鹏
+ */
+@Slf4j
+@SuppressWarnings("unused")
 public class NumberUtils {
-    private static final Logger logger = LoggerFactory.getLogger(NumberUtils.class);
 
     public static double divide(long b, long d) {
-        if (d == 0) {
-            return 0d;
-        }
-        return ((double) b)/d;
+        if (d == 0) {return 0;}
+        return ((double)b) / d;
     }
 
     public static int parseInt(Object value) {
@@ -22,14 +23,12 @@ public class NumberUtils {
         if (StringUtils.isBlank(value)) {
             return defValue;
         }
-        if (value.contains(".")) {
-            value = StringUtils.removePoint(value);
-        }
+        value = StringUtils.removePoint(value);
         Integer v = defValue;
         try {
             v = Integer.parseInt(value);
         } catch (Exception e) {
-            logger.error("parseInt failed!value="+value, e);
+            log.error("parseInt failed!value=" + value, e);
         }
         return v;
     }
@@ -47,7 +46,7 @@ public class NumberUtils {
         try {
             v = Double.parseDouble(value);
         } catch (Exception e) {
-            logger.error("parseDouble failed!value="+value, e);
+            log.error("parseDouble failed!value=" + value, e);
         }
         return v;
     }

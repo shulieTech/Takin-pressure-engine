@@ -1,41 +1,24 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
+
+import java.io.File;
+import java.util.List;
+import java.io.FileWriter;
+
+import org.dom4j.Element;
+import org.dom4j.Document;
+import org.dom4j.Attribute;
+import org.dom4j.io.SAXReader;
+
+import lombok.extern.slf4j.Slf4j;
 
 import io.shulie.flpt.pressure.engine.util.FileUtils;
 import io.shulie.flpt.pressure.engine.util.StringWriter;
-import io.shulie.flpt.pressure.engine.util.TryUtils;
-import org.dom4j.Attribute;
-import org.dom4j.Document;
-import org.dom4j.Element;
-import org.dom4j.dom.DOMText;
-import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.util.List;
-import java.util.Map;
 
 /**
- * Create by xuyh at 2020/4/30 01:15.
+ * @author xuyh
  */
+@Slf4j
 public class TestModiScript {
-    private static Logger logger = LoggerFactory.getLogger(TestModiScript.class);
 
     public static void main(String[] args) {
         File jmxFile = new File("/Users/johnson/Desktop/yunda-poc02.jmx");
@@ -45,7 +28,7 @@ public class TestModiScript {
         try {
             document = reader.read(jmxFile);
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
 
         String finalJmxFilePathName = "/Users/johnson/Desktop/final-test.jmx";
@@ -53,9 +36,6 @@ public class TestModiScript {
             FileUtils.writeTextFile(jmxFileContent, finalJmxFilePathName);
         }
         String concurrence = "10";
-        Long continuedTime = 300L;
-        Long preheatTime = 0L;
-        Long durationI = continuedTime + preheatTime;
         String duration = "300";
 
         Element root = document.getRootElement();
@@ -72,7 +52,7 @@ public class TestModiScript {
                         try {
                             stringPropElement.setText("slslsl");
                         } catch (Exception e) {
-                            logger.warn(e.getMessage(), e);
+                            log.warn(e.getMessage(), e);
                         }
                     }
                 }
@@ -90,7 +70,7 @@ public class TestModiScript {
                             try {
                                 stringPropElement.setText("dadadad");
                             } catch (Exception e) {
-                                logger.warn(e.getMessage(), e);
+                                log.warn(e.getMessage(), e);
                             }
                         }
                     }
@@ -104,15 +84,11 @@ public class TestModiScript {
                         String nameAttrValue = nameAttr.getValue();
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.num_threads")) {
                             // concurrent
-                            if (concurrence != null) {
-                                stringPropElement.setText(concurrence);
-                            }
+                            stringPropElement.setText(concurrence);
                         }
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.duration")) {
                             // duration
-                            if (duration != null) {
-                                stringPropElement.setText(duration);
-                            }
+                            stringPropElement.setText(duration);
                         }
                     }
                 }
@@ -124,14 +100,10 @@ public class TestModiScript {
                         Attribute nameAttr = stringPropElement.attribute("name");
                         String nameAttrValue = nameAttr.getValue();
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.num_threads")) {
-                            if (concurrence != null) {
-                                stringPropElement.setText(concurrence);
-                            }
+                            stringPropElement.setText(concurrence);
                         }
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.duration")) {
-                            if (duration != null) {
-                                stringPropElement.setText(duration);
-                            }
+                            stringPropElement.setText(duration);
                         }
                     }
                 }
@@ -144,15 +116,11 @@ public class TestModiScript {
                         String nameAttrValue = nameAttr.getValue();
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.num_threads")) {
                             // concurrent
-                            if (concurrence != null) {
-                                stringPropElement.setText(concurrence);
-                            }
+                            stringPropElement.setText(concurrence);
                         }
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.duration")) {
                             // duration
-                            if (duration != null) {
-                                stringPropElement.setText(duration);
-                            }
+                            stringPropElement.setText(duration);
                         }
                     }
                 }
@@ -165,9 +133,7 @@ public class TestModiScript {
                         String nameAttrValue = nameAttr.getValue();
                         if (nameAttrValue != null && nameAttrValue.equals("TargetLevel")) {
                             // concurrent
-                            if (concurrence != null) {
-                                stringPropElement.setText(concurrence);
-                            }
+                            stringPropElement.setText(concurrence);
                         }
                     }
                 }
@@ -180,9 +146,7 @@ public class TestModiScript {
                         String nameAttrValue = nameAttr.getValue();
                         if (nameAttrValue != null && nameAttrValue.equals("TargetLevel")) {
                             // concurrent
-                            if (concurrence != null) {
-                                stringPropElement.setText(concurrence);
-                            }
+                            stringPropElement.setText(concurrence);
                         }
                     }
                 }
@@ -195,13 +159,10 @@ public class TestModiScript {
                         String nameAttrValue = nameAttr.getValue();
                         if (nameAttrValue != null && nameAttrValue.equals("ThreadGroup.num_threads")) {
                             // concurrent
-                            if (concurrence != null) {
-                                stringPropElement.setText(concurrence);
-                            }
+                            stringPropElement.setText(concurrence);
                         }
                     }
                 }
-
 
                 List<Element> hashTree3Elements = hashTree2Element.elements("hashTree");
                 for (Element hashTree3Element : hashTree3Elements) {
@@ -215,13 +176,13 @@ public class TestModiScript {
             stringWriter = new StringWriter();
             document.write(stringWriter);
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         } finally {
             if (stringWriter != null) {
                 try {
                     stringWriter.close();
                 } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
+                    log.warn(e.getMessage(), e);
                 }
             }
         }
@@ -230,20 +191,20 @@ public class TestModiScript {
         /*
          * 写入最终压测文件
          */
-        File file = FileUtils.createFileDE(finalJmxFilePathName);
+        File file = FileUtils.createFilePreDelete(finalJmxFilePathName);
         FileWriter writer = null;
         try {
             writer = new FileWriter(file);
             writer.write(finalStr);
             writer.flush();
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         } finally {
             if (writer != null) {
                 try {
                     writer.close();
                 } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
+                    log.warn(e.getMessage(), e);
                 }
             }
         }

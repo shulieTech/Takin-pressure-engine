@@ -1,35 +1,26 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.util.http;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.List;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.net.SocketAddress;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.charset.Charset;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 
-public abstract class HttpUtils {
+/**
+ * http工具
+ *
+ * @author 李鹏
+ */
+public class HttpUtils {
 
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     public static String doGet(String url) {
         HostPort hostPort = getHostPortUrlFromUrl(url);
@@ -43,9 +34,9 @@ public abstract class HttpUtils {
         try {
             SocketAddress address = new InetSocketAddress(host, port);
             String request = "GET " + url + " HTTP/1.1\r\n"
-                    + "Host: " + host + ":" + port + "\r\n"
-                    + "Connection: Keep-Alive\r\n"
-                    + "\r\n";
+                + "Host: " + host + ":" + port + "\r\n"
+                + "Connection: Keep-Alive\r\n"
+                + "\r\n";
             socket = new Socket();
             // 设置建立连接超时时间 1s
             socket.connect(address, 1000);
@@ -70,12 +61,10 @@ public abstract class HttpUtils {
 
             // JDK 1.6 Socket没有实现Closeable接口
             if (socket != null) {
-                if (socket != null) {
-                    try {
-                        socket.close();
-                    } catch (final IOException ioe) {
-                        // ignore
-                    }
+                try {
+                    socket.close();
+                } catch (final IOException ioe) {
+                    // ignore
                 }
             }
 
@@ -94,13 +83,15 @@ public abstract class HttpUtils {
         try {
             SocketAddress address = new InetSocketAddress(host, port);
             socket = new Socket();
-            socket.connect(address, 1000); // 设置建立连接超时时间 1s
-            socket.setSoTimeout(5000); // 设置读取数据超时时间 5s
+            // 设置建立连接超时时间 1s
+            socket.connect(address, 1000);
+            // 设置读取数据超时时间 5s
+            socket.setSoTimeout(5000);
             output = socket.getOutputStream();
 
             String request =
-                    "POST " + url + " HTTP/1.1\r\nHost: " + host + ":" + port
-                            + "\r\nConnection: Keep-Alive\r\n";
+                "POST " + url + " HTTP/1.1\r\nHost: " + host + ":" + port
+                    + "\r\nConnection: Keep-Alive\r\n";
             if (body != null && !body.isEmpty()) {
                 request = request + "Content-Length: " + body.getBytes().length + "\r\n";
                 request = request + "Content-Type: application/json\r\n";
@@ -120,8 +111,7 @@ public abstract class HttpUtils {
             }
             Map<String, List<String>> headers = readHeaders(input);
             input = wrapperInput(headers, input);
-            String result = toString(input);
-            return result;
+            return toString(input);
         } catch (IOException e) {
             return null;
         } finally {
@@ -130,12 +120,10 @@ public abstract class HttpUtils {
 
             // JDK 1.6 Socket没有实现Closeable接口
             if (socket != null) {
-                if (socket != null) {
-                    try {
-                        socket.close();
-                    } catch (final IOException ioe) {
-                        // ignore
-                    }
+                try {
+                    socket.close();
+                } catch (final IOException ioe) {
+                    // ignore
                 }
             }
 
@@ -159,31 +147,31 @@ public abstract class HttpUtils {
     }
 
     public static String readLine(InputStream input) throws IOException {
-        ByteArrayOutputStream bufdata = new ByteArrayOutputStream();
+        ByteArrayOutputStream bufData = new ByteArrayOutputStream();
         int ch;
         while ((ch = input.read()) >= 0) {
-            bufdata.write(ch);
+            bufData.write(ch);
             if (ch == '\n') {
                 break;
             }
         }
-        if (bufdata.size() == 0) {
+        if (bufData.size() == 0) {
             return null;
         }
-        byte[] rawdata = bufdata.toByteArray();
-        int len = rawdata.length;
+        byte[] rawData = bufData.toByteArray();
+        int len = rawData.length;
         int offset = 0;
         if (len > 0) {
-            if (rawdata[len - 1] == '\n') {
+            if (rawData[len - 1] == '\n') {
                 offset++;
                 if (len > 1) {
-                    if (rawdata[len - 2] == '\r') {
+                    if (rawData[len - 2] == '\r') {
                         offset++;
                     }
                 }
             }
         }
-        return new String(rawdata, 0, len - offset, UTF_8);
+        return new String(rawData, 0, len - offset, UTF_8);
     }
 
     public static InputStream wrapperInput(Map<String, List<String>> headers, InputStream input) {
@@ -215,30 +203,30 @@ public abstract class HttpUtils {
         return input;
     }
 
-    public static Map<String, List<String>> readHeaders(InputStream input)
-            throws IOException {
-        Map<String, List<String>> headers = new HashMap<String, List<String>>();
+    public static Map<String, List<String>> readHeaders(InputStream input) throws IOException {
+        Map<String, List<String>> headers = new HashMap<>(16);
         String line = readLine(input);
         while (line != null && !line.isEmpty()) {
             String[] headerPair = line.split(":");
             String name = headerPair[0].trim();
             String value = headerPair[1].trim();
-            List<String> values = headers.get(name);
-            if (values == null) {
-                values = new ArrayList<String>();
-                headers.put(name, values);
-            }
+            List<String> values = headers.computeIfAbsent(name, k -> new ArrayList<>());
             values.add(value);
             line = readLine(input);
         }
         return headers;
     }
 
-    public static void exhaustInputStream(InputStream inStream)
-            throws IOException {
-        byte buffer[] = new byte[1024];
-        while (inStream.read(buffer) >= 0) {
-        }
+    /**
+     * 消耗空InputStream
+     *
+     * @param inStream 输入流
+     * @throws IOException IO异常
+     */
+    @SuppressWarnings("StatementWithEmptyBody")
+    public static void exhaustInputStream(InputStream inStream) throws IOException {
+        byte[] buffer = new byte[1024];
+        while (inStream.read(buffer) >= 0) {}
     }
 
     public static void closeQuietly(Closeable closeable) {
@@ -251,7 +239,8 @@ public abstract class HttpUtils {
         }
     }
 
-    private static Pattern URL_PATTERN = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern URL_PATTERN =
+        Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?", Pattern.CASE_INSENSITIVE);
 
     private static HostPort getHostPortUrlFromUrl(String url) {
         String domain = url;
@@ -259,8 +248,8 @@ public abstract class HttpUtils {
         Matcher matcher = URL_PATTERN.matcher(url);
         if (matcher.find()) {
             String group = matcher.group();
-            domain = group.substring(group.indexOf("//") + 2, group.length());
-            restUrl = url.substring(url.indexOf(group) + group.length(), url.length());
+            domain = group.substring(group.indexOf("//") + 2);
+            restUrl = url.substring(url.indexOf(group) + group.length());
         }
 
         HostPort hostPort = new HostPort();
@@ -270,7 +259,7 @@ public abstract class HttpUtils {
             hostPort.port = 80;
         } else {
             hostPort.host = domain.substring(0, domain.indexOf(":"));
-            hostPort.port = Integer.parseInt(domain.substring(domain.indexOf(":") + 1, domain.length()));
+            hostPort.port = Integer.parseInt(domain.substring(domain.indexOf(":") + 1));
         }
         return hostPort;
     }
@@ -283,10 +272,10 @@ public abstract class HttpUtils {
         @Override
         public String toString() {
             return "HostPort{" +
-                    "host='" + host + '\'' +
-                    ", port=" + port +
-                    ", url='" + url + '\'' +
-                    '}';
+                "host='" + host + '\'' +
+                ", port=" + port +
+                ", url='" + url + '\'' +
+                '}';
         }
     }
 }

@@ -1,22 +1,15 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.plugin.jmeter.script;
 
-import com.google.common.collect.Lists;
+import org.dom4j.*;
+
+import java.util.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.lang.reflect.Field;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
 import io.shulie.flpt.pressure.engine.api.ability.model.*;
 import io.shulie.flpt.pressure.engine.api.annotation.GlobalParamKey;
@@ -37,36 +30,32 @@ import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
 import io.shulie.jmeter.tool.redis.RedisConfig;
 import io.shulie.jmeter.tool.redis.RedisUtil;
 import io.shulie.takin.constants.TakinRequestConstant;
-import org.apache.commons.collections4.CollectionUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
-import org.dom4j.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 
 /**
- * Create by xuyh at 2020/5/12 21:32.
+ * @author xuyh
  */
-@SuppressWarnings("all")
+@Slf4j
 public class ScriptModifier {
-    private static Logger logger = LoggerFactory.getLogger(ScriptModifier.class);
 
-    //全局参数是否已经添加
+    /**
+     * 全局参数是否已经添加
+     */
     private static boolean globalArgumentsAdded = false;
 
-    //后端监听器参数是否已经添加
-    private static boolean backendListenerAdded = false;
-
-    //校验包含
+    /**
+     * 校验包含
+     *
+     * @param arrays 参数
+     * @param value  值
+     * @return 是否包含
+     */
     private static boolean arrayContains(int[] arrays, int value) {
-        if(arrays != null && arrays.length > 0) {
-            for(int arr : arrays) {
-                if(arr == value) {
+        if (arrays != null && 0 < arrays.length) {
+            for (int arr : arrays) {
+                if (arr == value) {
                     return true;
                 }
             }
@@ -77,12 +66,12 @@ public class ScriptModifier {
     /**
      * 修改脚本
      *
-     * @param document
-     * @param context
-     * @param pressurePlugin
+     * @param document                       脚本文件
+     * @param context                        压测上下文
+     * @param supportedPressureModeAbilities 支持压测模式的能力
      */
     public static boolean modifyDocument(Document document, PressureContext context
-            , SupportedPressureModeAbilities supportedPressureModeAbilities) {
+        , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //场景id string
         String sceneIdString = context.getSceneId() + "";
         String reportIdString = context.getReportId() + "";
@@ -90,7 +79,6 @@ public class ScriptModifier {
 
         //当前引擎压测模式
         PressureSceneEnum pressureScene = context.getPressureScene();
-        EnginePressureConfig pressureConfig = context.getPressureConfig();
 
         //处理压测数据
         List<Map<String, Object>> csvConfigs = context.getDataFileSets();
@@ -109,13 +97,13 @@ public class ScriptModifier {
             return false;
         }
         //hashTree
-        Element rootConTainer = rootChildElements.get(0);
-        if (null == rootConTainer) {
+        Element rootContainer = rootChildElements.get(0);
+        if (null == rootContainer) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file is empty!");
             return false;
         }
         //TestPlan, hashTree
-        List<Element> elements = DomUtils.elements(rootConTainer);
+        List<Element> elements = DomUtils.elements(rootContainer);
         if (CollectionUtils.isEmpty(elements)) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file is empty!");
             return false;
@@ -129,7 +117,7 @@ public class ScriptModifier {
         modifyControllerProp(elements);
 
         // *********************************TestPlan********************************
-        List<Element> testPlanElements = DomUtils.elements(rootConTainer, "TestPlan");
+        List<Element> testPlanElements = DomUtils.elements(rootContainer, "TestPlan");
         if (CollectionUtils.isEmpty(testPlanElements) || testPlanElements.size() > 1) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan or too many TestPlan!");
             return false;
@@ -140,9 +128,7 @@ public class ScriptModifier {
 
         // *********************************TestPlan********************************
         // 第二层:testPlan的hashTree,与testPlan平级
-        List<Element> hashTree2Elements = DomUtils.elements(rootConTainer, "hashTree");
-//        if (CollectionUtils.isEmpty(hashTree2Elements) || hashTree2Elements.size() > 1) {
-//            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan hashTree or too many TestPlan hashTree!");
+        List<Element> hashTree2Elements = DomUtils.elements(rootContainer, "hashTree");
         if (CollectionUtils.isEmpty(hashTree2Elements)) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "jmx file content has no TestPlan hashTree!");
             return false;
@@ -162,35 +148,12 @@ public class ScriptModifier {
         //修改循环控制器中的LoopController.continue_forever参数为true（除非loops=-1）
         modifyLoopControllerContinueForever(testPlanContainer);
 
-//        // 获取第三层
-//        List<Element> hashTree3Elements = DomUtils.elements(testPlanContainer, "hashTree");
-//        for (Element hashTree3Element : hashTree3Elements) {
-//            addBackEndListener(hashTree3Element, sceneIdString, reportIdString, customerIdString, context);
-//
-//            // 只有巡检模式添加固定定时器
-//            if (PressureSceneEnum.INSPECTION_MODE == currentEnginePressureMode) {
-//                logger.info("组装巡检模式添加固定定时器和断言");
-//                // 循环时间
-//                //addFixedTimer(hashTree3Element, enginePressureParams.get("fixed_timer"));
-//                //modify by lipeng 20210609
-//                // 固定定时器只能按每个请求等待固定时间，这里巡检的需求是每个线程组每隔固定时间请求，所以这里改为flow controller action组件
-//                addFlowControllerAction(hashTree3Element, pressureConfig.getFixedTimer());
-//                //modify end;
-//                // 增加判断断言
-//                addFeanShellAssertion(hashTree3Element);
-//            }
-//            // add by lipeng  添加试跑模式
-//            else if (PressureSceneEnum.TRY_RUN == currentEnginePressureMode) {
-//                logger.info("试跑模式开启..");
-//            }
-//        }
-
-        // 添加全局参数 add by lipeng
+        // 添加全局参数 add by 李鹏
         // 全局参数只用添加一个，均可获取到
         if (!globalArgumentsAdded) {
 
             addGlobalArguments(testPlanContainer, context.getGlobalUserVariables(), pressureScene);
-            // add by lipeng  添加traceId生成和添加到http header
+            // add by 李鹏  添加traceId生成和添加到http header
             // 全局参数只用添加一个，均可获取到
             // 添加BeanShell 预处理程序 增加traceId生成
             //不使用beanshell改为程序内，beanshell性能较差
@@ -202,71 +165,13 @@ public class ScriptModifier {
         }
         // add end
 
-//        // add by lipeng 如果是TPS模式 存在多个业务活动，需要添加吞吐量控制器
-//        if (PressureSceneEnum.TPS == pressureScene) {
-//            List<BusinessActivity> businessActivities = context.getBusinessActivities();
-//            //只有是业务流程 也就是业务活动大于1个的时候才需要添加吞吐量控制器
-//            if (null == businessActivities || businessActivities.size()<=0) {
-//                return false;
-//            }
-//            int tpsThreadMode = null != pressureConfig.getTpsThreadMode() ? pressureConfig.getTpsThreadMode() : 0;
-//            if (0 == tpsThreadMode) {
-//                //总的目标tps
-//                double tpsTargetLevel = null != pressureConfig.getTpsTargetLevel() ? pressureConfig.getTpsTargetLevel() : 0d;
-//                //目标增大因子（保证tps在目标之上）,默认0.1即增大10%
-//                double tpsTargetLevelFactor = null != pressureConfig.getTpsTargetLevelFactor() ? pressureConfig.getTpsTargetLevelFactor() : 0.1d;
-//                //添加常量吞吐量控制器
-//                addConstantsThroughputControl(root, tpsTargetLevel, businessActivities, tpsTargetLevelFactor);
-//            } else {
-//                addThroughputControl(root, businessActivities);
-//            }
-//        }
-//        // add end
-
-        //add by zhaoyong 如果是流量调试模式，将所有压测标去除掉
-        if (PressureSceneEnum.FLOW_DEBUG == pressureScene){
+        //add by 赵勇 如果是流量调试模式，将所有压测标去除掉
+        if (PressureSceneEnum.FLOW_DEBUG == pressureScene) {
             updateJmxHttpPressTestTags(document);
             updateXmlDubboPressTestTags(document);
         }
         return true;
     }
-
-
-//    /**
-//     * 给请求添加常量吞吐量控制器
-//     *
-//     * @param root               rootElement
-//     * @param businessActivities 所有业务活动信息
-//     * @author yuanba
-//     */
-//    public static void addConstantsThroughputControl(Element root, double tpsTargetLevel,  List<BusinessActivity> businessActivities, double tpsTargetLevelFactor) {
-//        // elementTestName对应的百分比
-//        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
-//            .collect(Collectors.toMap(BusinessActivity::getElementTestName,BusinessActivity::getThroughputPercent));
-//
-//        // 需要的所有属性值
-//        List<String> testNameValues = businessActivities
-//            .stream().map(BusinessActivity::getElementTestName).collect(Collectors.toList());
-//
-//        // 根据需要的testname属性的属性值 获取所有满足element
-//        List<Element> sampleElements = getAllElementByAttribute(root, "testname", testNameValues);
-//        // 找到数据才做处理
-//        if (sampleElements != null && sampleElements.size() > 0) {
-//            for (Element sampleElement : sampleElements) {
-//                String testNameValue = sampleElement.attributeValue("testname");
-//                //当前业务活动tps占比
-//                double throughputPercent = NumberUtils.parseDouble(businessActivityMap.get(testNameValue))/100d;
-//                //求1分钟的并发数,1.1是原来的目标的基础上加10%
-//                double throughput = tpsTargetLevel * 60 * throughputPercent;
-//                //如果上浮因子大于5，则表示固定上浮这个数，小于等于5表示上浮百分比
-//                throughput += tpsTargetLevelFactor > 5 ? tpsTargetLevelFactor : throughput * tpsTargetLevelFactor;
-//                //给每一个采样器添加常量吞吐量控制器
-//                addEachConstantsThroughputControl(sampleElement, testNameValue, throughput, throughputPercent, tpsTargetLevelFactor);
-//            }
-//        } else {
-//            logger.warn("根据testname未找到对应的采样器元素。");
-//        }
-//    }
 
     /**
      * 填坑：循环控制器 LoopController.continue_forever=false时，会导致tps模式不受控制
@@ -275,11 +180,11 @@ public class ScriptModifier {
         if (null == element) {
             return;
         }
-        List<Element> chilElements = DomUtils.elements(element);
-        if (CollectionUtils.isEmpty(chilElements)) {
+        List<Element> childrenElements = DomUtils.elements(element);
+        if (CollectionUtils.isEmpty(childrenElements)) {
             return;
         }
-        for (Element e : chilElements) {
+        for (Element e : childrenElements) {
             if (null == e) {
                 continue;
             }
@@ -309,7 +214,7 @@ public class ScriptModifier {
                 if (BooleanUtils.isNotTrue(continueForever)) {
                     if (null == loops || -1 != loops) {
                         if (null == continueForeverElement) {
-                            DomUtils.addBasePropElement(e,"LoopController.continue_forever", true);
+                            DomUtils.addBasePropElement(e, "LoopController.continue_forever", true);
                         } else {
                             continueForeverElement.setText("true");
                         }
@@ -325,8 +230,9 @@ public class ScriptModifier {
 
     /**
      * 添加常量吞吐量定时器
-     * @param threadGroupElement    线程组
-     * @param context               参数
+     *
+     * @param threadGroupElement 线程组
+     * @param context            参数
      */
     public static void addConstantsThroughputControl(Element threadGroupElement, PressureContext context, EnginePressureConfig config, int threadNum) {
         Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
@@ -335,22 +241,18 @@ public class ScriptModifier {
         }
         //目标增大因子（保证tps在目标之上）,默认0.1即增大10%
         double tpsTargetLevelFactor = null != config.getTpsTargetLevelFactor() ? config.getTpsTargetLevelFactor() : 0.1d;
-//        //添加常量吞吐量控制器
-//        // elementTestName对应的百分比
-//        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
-//                .collect(Collectors.toMap(BusinessActivity::getElementTestName,BusinessActivity::getThroughputPercent));
 
         Element hashTreeElement = DomUtils.findChildrenContainerElement(threadGroupElement);
         List<Element> elements = DomUtils.elements(hashTreeElement);
         if (CollectionUtils.isEmpty(elements)) {
             return;
         }
-//        String transcation = DomUtils.getTransaction(threadGroupElement);
-//        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
         //常量吞吐量控制器
         addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
-        //精准吞吐量定时器
-//        addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
+        /*
+            精准吞吐量定时器
+            addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
+         */
     }
 
     public static boolean addPreciseThroughputTimer(List<Element> elements, PressureContext context, double factor, int threadNum) {
@@ -360,7 +262,7 @@ public class ScriptModifier {
         for (Element e : elements) {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
-            if (null == type || type != NodeTypeEnum.SAMPLER) {
+            if (type != NodeTypeEnum.SAMPLER) {
                 Element hashTreeElement = DomUtils.findChildrenContainerElement(e);
                 List<Element> childElements = DomUtils.elements(hashTreeElement);
                 if (CollectionUtils.isEmpty(childElements)) {
@@ -373,10 +275,9 @@ public class ScriptModifier {
                     continue;
                 }
             }
-            String transcation = DomUtils.getTransaction(e);
-            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
-            int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
-            double podTps = (double) tps;
+            String transaction = DomUtils.getTransaction(e);
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+            double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
             if (null != context.getPodCount() && context.getPodCount() > 0) {
                 podTps = podTps / context.getPodCount();
             }
@@ -388,7 +289,7 @@ public class ScriptModifier {
             if (factor > 5) {
                 throughput += factor;
             } else {
-                throughput *= (1+factor);
+                throughput *= (1 + factor);
             }
             //给第一个采样器加准确的吞吐量定时器
             addPreciseThroughputTimer(e, throughput, percent, factor, context, threadNum);
@@ -401,10 +302,10 @@ public class ScriptModifier {
      * 添加准确的吞吐量定时器
      */
     public static void addPreciseThroughputTimer(Element samplerElement, Double throughput, Double throughputPercent,
-                                                 Double tpsFactor, PressureContext context, int threadNum) {
+        Double tpsFactor, PressureContext context, int threadNum) {
         // 1. 校验采样器是否存在
         if (null == samplerElement) {
-            logger.error("sampleElement is null");
+            log.error("sampleElement is null");
             return;
         }
         // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
@@ -415,7 +316,7 @@ public class ScriptModifier {
             int pos = elements.indexOf(samplerElement);
             samplerElementHashTree = samplerElement.addElement("hashTree");
             samplerElement.remove(samplerElement);
-            samplerParent.elements().add(pos+1, samplerElementHashTree);
+            samplerParent.elements().add(pos + 1, samplerElementHashTree);
         }
 
         // 5. 在采样器父节点下面创建准确的吞吐量定时器
@@ -433,9 +334,7 @@ public class ScriptModifier {
         //吞吐周期（秒）
         DomUtils.addBasePropElement(preciseThroughputTimer, "throughputPeriod", 1);
         //测试持续时间
-//        DomUtils.addBasePropElement(preciseThroughputTimer, "duration", context.getDuration());
         DomUtils.addBasePropElement(preciseThroughputTimer, "duration", 1);
-//        int batchSize = (int) Math.ceil(threadNum /4d);
         int batchSize = 1;
         //批处理中的线程数
         DomUtils.addBasePropElement(preciseThroughputTimer, "batchSize", batchSize);
@@ -445,9 +344,6 @@ public class ScriptModifier {
         DomUtils.addBasePropElement(preciseThroughputTimer, "randomSeed", 0L);
         //默认参数，不知道干啥的
         DomUtils.addBasePropElement(preciseThroughputTimer, "exactLimit", 10000);
-//        if (null != throughputPercent) {
-//            DomUtils.addBasePropElement(preciseThroughputTimer, "percent", throughputPercent);
-//        }
         if (null != tpsFactor) {
             DomUtils.addBasePropElement(preciseThroughputTimer, "tpsFactor", tpsFactor);
         }
@@ -460,33 +356,31 @@ public class ScriptModifier {
         if (CollectionUtils.isEmpty(elements)) {
             return false;
         }
-        boolean isAdd = false;
         for (Element e : elements) {
             if (null == e) {
                 continue;
             }
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
-            if (null == type || NodeTypeEnum.SAMPLER != type) {
+            if (NodeTypeEnum.SAMPLER != type) {
                 addConstantsThroughputControl(DomUtils.elements(e), context, factor);
                 continue;
             }
-            String transcation = DomUtils.getTransaction(e);
-            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transcation);
-            int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
-            double podTps = (double) tps;
+            String transaction = DomUtils.getTransaction(e);
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+            double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
             if (null != context.getPodCount() && context.getPodCount() > 0) {
                 podTps = podTps / context.getPodCount();
             }
             //当前业务活动tps占比
             double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
             //求1分钟的并发数,
-            double throughput = podTps*60;
+            double throughput = podTps * 60;
             //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
             if (factor > 5) {
                 throughput += factor;
             } else {
-                throughput *= (1+factor);
+                throughput *= (1 + factor);
             }
             //给第一个采样器添加常量吞吐量控制器
             addEachConstantsThroughputControl(e, throughput, percent, factor);
@@ -507,14 +401,15 @@ public class ScriptModifier {
      * 6. 在吞吐量控制器的hashTree下添加采样器和采样器的hashTree的克隆副本
      * 7. 将原先在采样器父节点下的采样器和采样器的hashTree移除
      *
-     * @param samplerElement  sampleElement是传来的采样器，一般是HTTPSamplerProxy 或者 dubbo kafka之类的。
-     * @param sampleTestname 取样器testname
-     * @param throughput     每分钟常量吞吐量
+     * @param samplerElement    sampleElement是传来的采样器，一般是HTTPSamplerProxy 或者 dubbo kafka之类的。
+     * @param throughput        每分钟常量吞吐量
+     * @param throughputPercent 吞吐量百分比
+     * @param tpsFactor         吞吐量浮动因子
      */
     public static void addEachConstantsThroughputControl(Element samplerElement, Double throughput, Double throughputPercent, Double tpsFactor) {
         // 1. 校验采样器是否存在
         if (samplerElement == null) {
-            logger.error("sampleElement is null");
+            log.error("采样器为空");
             return;
         }
         // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
@@ -525,7 +420,7 @@ public class ScriptModifier {
             int pos = elements.indexOf(samplerElement);
             samplerElementHashTree = samplerElement.addElement("hashTree");
             samplerElement.remove(samplerElement);
-            samplerParent.elements().add(pos+1, samplerElementHashTree);
+            samplerParent.elements().add(pos + 1, samplerElementHashTree);
         }
 
         // 5. 在采样器父节点下面创建常量吞吐量控制器
@@ -596,7 +491,7 @@ public class ScriptModifier {
                         }
                         value = String.valueOf(v);
                     } catch (IllegalAccessException e) {
-                        logger.warn("HttpHeaderVariables 参数转换异常，参数名 - {}", declaredField.getName());
+                        log.warn("HttpHeaderVariables 参数转换异常，参数名 - {}", declaredField.getName());
                     }
 
                     //http header添加参数
@@ -614,14 +509,15 @@ public class ScriptModifier {
             }
         }
 
-        //添加hashtree
+        //添加hashTree
         element.addElement("hashTree");
     }
 
     /**
      * 添加traceId生成器
      *
-     * @param hashTree3Element
+     * @param element                   节点
+     * @param currentEnginePressureMode 当前施压模式
      */
     private static void addTraceIdBeanShellPreProcessor(Element element, PressureSceneEnum currentEnginePressureMode) {
         //节点属性
@@ -661,10 +557,10 @@ public class ScriptModifier {
     /**
      * 创建新的节点
      *
-     * @param parent
-     * @param elementName
-     * @param elementAttributes
-     * @return
+     * @param parent            父节点
+     * @param elementName       节点名
+     * @param elementAttributes 节点属性
+     * @return 新的节点
      */
     private static Element createElement(Element parent
         , String elementName
@@ -688,25 +584,24 @@ public class ScriptModifier {
         return ele;
     }
 
-    private static void addFeanShellAssertion(Element element) {
+    private static void addBeanShellAssertion(Element element) {
         Element beanShellAssertion = element.addElement("BeanShellAssertion");
         beanShellAssertion.addAttribute("guiclass", "BeanShellAssertionGui");
         beanShellAssertion.addAttribute("testclass", "BeanShellAssertion");
         beanShellAssertion.addAttribute("testname", "BeanShell Assertion");
         beanShellAssertion.addAttribute("enabled", "true");
-        Element bbeanShellStringProp1 = beanShellAssertion.addElement("stringProp");
-        bbeanShellStringProp1.addAttribute("name", "BeanShellAssertion.query");
-        //modify by lipeng 特殊标记改为QUOTE_REPLACEMENT
-        bbeanShellStringProp1.setText("log.info(" + JmeterPluginUtil.QUOTE_REPLACEMENT + "Current Sample Is Requested..."
+        Element beanShellStringProp1 = beanShellAssertion.addElement("stringProp");
+        beanShellStringProp1.addAttribute("name", "BeanShellAssertion.query");
+        //modify by 李鹏 特殊标记改为QUOTE_REPLACEMENT
+        beanShellStringProp1.setText("log.info(" + JmeterPluginUtil.QUOTE_REPLACEMENT + "Current Sample Is Requested..."
             + JmeterPluginUtil.QUOTE_REPLACEMENT + ")");
-        //        bbeanShellStringProp1.setText("log.info(\"hahahaha...\")");
-        Element bbeanShellStringProp2 = beanShellAssertion.addElement("stringProp");
-        bbeanShellStringProp2.addAttribute("name", "BeanShellAssertion.filename");
-        Element bbeanShellStringProp3 = beanShellAssertion.addElement("stringProp");
-        bbeanShellStringProp3.addAttribute("name", "BeanShellAssertion.parameters");
-        Element bbeanShellStringProp4 = beanShellAssertion.addElement("boolProp");
-        bbeanShellStringProp4.addAttribute("name", "BeanShellAssertion.resetInterpreter");
-        bbeanShellStringProp4.setText("false");
+        Element beanShellStringProp2 = beanShellAssertion.addElement("stringProp");
+        beanShellStringProp2.addAttribute("name", "BeanShellAssertion.filename");
+        Element beanShellStringProp3 = beanShellAssertion.addElement("stringProp");
+        beanShellStringProp3.addAttribute("name", "BeanShellAssertion.parameters");
+        Element beanShellStringProp4 = beanShellAssertion.addElement("boolProp");
+        beanShellStringProp4.addAttribute("name", "BeanShellAssertion.resetInterpreter");
+        beanShellStringProp4.setText("false");
         element.addElement("hashTree");
     }
 
@@ -725,8 +620,8 @@ public class ScriptModifier {
     /**
      * 添加flow controller action
      *
-     * @param element
-     * @param delayTime
+     * @param element   节点
+     * @param delayTime 延时时间
      */
     private static void addFlowControllerAction(Element element, Object delayTime) {
         Element flowControllerAction = element.addElement("TestAction");
@@ -736,13 +631,15 @@ public class ScriptModifier {
         flowControllerAction.addAttribute("enabled", "true");
         Element intProp1 = flowControllerAction.addElement("intProp");
         intProp1.addAttribute("name", "ActionProcessor.action");
-        intProp1.setText("1"); //线程等待
+        // 线程等待
+        intProp1.setText("1");
         Element intProp2 = flowControllerAction.addElement("intProp");
         intProp2.addAttribute("name", "ActionProcessor.target");
-        intProp2.setText("0"); //不杀死线程
+        // 不杀死线程
+        intProp2.setText("0");
         Element stringProp = flowControllerAction.addElement("stringProp");
         stringProp.addAttribute("name", "ActionProcessor.duration");
-        //默认等待5s
+        // 默认等待5s
         stringProp.setText(String.valueOf(delayTime == null ? "5000" : delayTime));
         element.addElement("hashTree");
     }
@@ -752,14 +649,14 @@ public class ScriptModifier {
      *
      * @param hashTree2Element    第二层的hashTree
      * @param globalUserVariables 参数信息
-     * @author lipeng
+     * @author 李鹏
      */
     private static void addGlobalArguments(Element hashTree2Element
         , GlobalUserVariables globalUserVariables
         , PressureSceneEnum pressureSceneEnum) {
         //如果参数为空 直接返回
         if (globalUserVariables == null) {
-            logger.warn("添加Jmeter全局参数失败，jmeterGlobalUserVariables is null");
+            log.warn("添加Jmeter全局参数失败，jmeterGlobalUserVariables is null");
             return;
         }
         Element argumentsPanel = hashTree2Element.addElement("Arguments");
@@ -774,13 +671,13 @@ public class ScriptModifier {
             GlobalParamKey anno = declaredField.getAnnotation(GlobalParamKey.class);
             //未标注GlobalParamKey的字段不作处理
             if (null == anno) {
-                logger.info("GlobalParamKey is null ,fieldname:" + declaredField.getName());
+                log.info("GlobalParamKey is null ,field name:" + declaredField.getName());
                 continue;
             }
             //校验是否专属参数
             PressureSceneEnum[] assignForModes = anno.assignForMode();
             //只有指定了专属参数属性才进行校验
-            if (Objects.nonNull(assignForModes) && assignForModes.length>0 && !CommonUtil.contains(assignForModes, pressureSceneEnum)) {
+            if (Objects.nonNull(assignForModes) && assignForModes.length > 0 && !CommonUtil.contains(assignForModes, pressureSceneEnum)) {
                 continue;
             }
 
@@ -799,7 +696,7 @@ public class ScriptModifier {
                 }
                 value = String.valueOf(v);
             } catch (IllegalAccessException e) {
-                logger.warn("JmeterGlobalUserVariables 参数转换异常，参数名 - {}", declaredField.getName());
+                log.warn("JmeterGlobalUserVariables 参数转换异常，参数名 - {}", declaredField.getName());
             }
 
             //jmeter脚本添加全局参数
@@ -820,39 +717,9 @@ public class ScriptModifier {
         hashTree2Element.addElement("hashTree");
     }
 
-//    /**
-//     * 给请求添加吞吐量控制器
-//     *
-//     * @param root               rootElement
-//     * @param businessActivities 所有业务活动信息
-//     * @author lipeng
-//     */
-//    public static void addThroughputControl(Element root, List<BusinessActivity> businessActivities) {
-//        // elementTestName对应的百分比
-//        Map<String, String> businessActivityMap = businessActivities.stream()
-//            .collect(Collectors.toMap(row -> row.getElementTestName()
-//                , row -> row.getThroughputPercent()));
-//
-//        // 需要的所有属性值
-//        List<String> testNameValues = businessActivities
-//            .stream().map(m -> m.getElementTestName()).collect(Collectors.toList());
-//
-//        // 根据需要的testname属性的属性值 获取所有满足element
-//        List<Element> sampleElements = getAllElementByAttribute(root, "testname", testNameValues);
-//        // 找到数据才做处理
-//        if (sampleElements != null && sampleElements.size() > 0) {
-//            for (Element sampleElement : sampleElements) {
-//                String testNameValue = sampleElement.attributeValue("testname");
-//                //给每一个采样器添加吞吐量控制器
-//                addEachThroughputControl(sampleElement, testNameValue, businessActivityMap.get(testNameValue));
-//            }
-//        } else {
-//            logger.warn("根据testname未找到对应的采样器元素。");
-//        }
-//    }
-
     /**
      * 给请求添加吞吐量控制器
+     *
      * @param threadGroupElement 线程组
      * @param context            参数信息
      */
@@ -861,10 +728,6 @@ public class ScriptModifier {
         if (null == businessMap) {
             return;
         }
-//        // elementTestName对应的百分比
-//        Map<String, String> businessActivityMap = businessActivities.stream().filter(Objects::nonNull)
-//                .collect(Collectors.toMap(BusinessActivity::getElementTestName, BusinessActivity::getThroughputPercent));
-
         Element hashTreeElement = DomUtils.findChildrenContainerElement(threadGroupElement);
         List<Element> elements = DomUtils.elements(hashTreeElement);
         if (CollectionUtils.isEmpty(elements)) {
@@ -874,14 +737,13 @@ public class ScriptModifier {
         for (Element e : elements) {
             NodeTypeEnum type = NodeTypeEnum.value(e.getName());
             //非线程组节点不处理
-            if (null == type || type != NodeTypeEnum.SAMPLER) {
+            if (type != NodeTypeEnum.SAMPLER) {
                 continue;
             }
-            String transcation = DomUtils.getTransaction(e);
-            BusinessActivityConfig bsm = CommonUtil.getFromMap(businessMap, transcation);
-            int tps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
-            double percent =  CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
-            addEachThroughputControl(e, String.valueOf(percent*100));
+            String transaction = DomUtils.getTransaction(e);
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(businessMap, transaction);
+            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
+            addEachThroughputControl(e, String.valueOf(percent * 100));
         }
     }
 
@@ -897,14 +759,13 @@ public class ScriptModifier {
      * 6. 在吞吐量控制器的hashTree下添加采样器和采样器的hashTree的克隆副本
      * 7. 将原先在采样器父节点下的采样器和采样器的hashTree移除
      *
-     * @param samplerElement  sampleElement是传来的采样器，一般是HTTPSamplerProxy 或者 dubbo kafka之类的。
-     * @param sampleTestname 取样器testname
+     * @param samplerElement sampleElement是传来的采样器，一般是HTTPSamplerProxy 或者 dubbo kafka之类的。
      * @param percent        吞吐量百分比
      */
     public static void addEachThroughputControl(Element samplerElement, String percent) {
         // 1. 校验采样器是否存在
         if (samplerElement == null) {
-            logger.error("sampleElement is null");
+            log.error("sampleElement is null");
             return;
         }
         // 2. 根据采样器获取其父节点，也就是采样器所在的hashTree。
@@ -939,18 +800,15 @@ public class ScriptModifier {
         } else {
             throughputControllerHashTree.addElement("hashTree");
         }
-        // 7. 将原先在采样器父节点下的采样器和采样器的hashTree移除
-//        sampleParent.remove(sampleElement);
-//        sampleParent.remove(sampleElementHashTree);
-        //吞吐量名称为取样器名称+"-tc"
+        // 修改吞吐量名称为取样器名称 +"-tc"
         modifyElementTestName(throughputController);
     }
 
     /**
      * 获取取样器的吞吐量控制器的testname  规则是sampleTestname+"-tc"
      *
-     * @param sampleTestname
-     * @return
+     * @param sampleTestname 取样器名称
+     * @return -
      */
     public static String getSampleThroughputControllerTestname(String sampleTestname) {
         return sampleTestname + "-tc";
@@ -958,7 +816,7 @@ public class ScriptModifier {
 
     private static String buildJarFilePathListString(List<String> jarFilePathList) {
         return jarFilePathList.stream().filter(StringUtils::isNotBlank)
-                .collect(Collectors.joining(","));
+            .collect(Collectors.joining(","));
     }
 
     private static void csvPathModify(List<Map<String, Object>> csvConfigs, Element parent, int podCount) {
@@ -967,7 +825,7 @@ public class ScriptModifier {
         }
         List<Element> children = parent.elements();
         for (Element child : children) {
-            if (child.getName().equalsIgnoreCase("CSVDataSet")) {
+            if ("CSVDataSet".equalsIgnoreCase(child.getName())) {
                 replaceCsvPath(child, csvConfigs, podCount);
             }
             csvPathModify(csvConfigs, child, podCount);
@@ -980,7 +838,7 @@ public class ScriptModifier {
         for (Element csvPropertyElement : csvPropertyElements) {
             Attribute attribute = csvPropertyElement.attribute("name");
             String value = attribute.getValue();
-            if (value != null && value.equalsIgnoreCase("filename")) {
+            if ("filename".equalsIgnoreCase(value)) {
                 csvFileName = csvPropertyElement.getText();
             }
         }
@@ -994,8 +852,7 @@ public class ScriptModifier {
                 List<Element> strPropElements = currentElement.elements("stringProp");
                 for (Element strPropElement : strPropElements) {
                     Attribute attribute = strPropElement.attribute("name");
-                    if (attribute != null && attribute.getValue() != null && attribute.getValue().equalsIgnoreCase(
-                        "filename")) {
+                    if (attribute != null && "filename".equalsIgnoreCase(attribute.getValue())) {
                         strPropElement.setText(path);
                     }
                 }
@@ -1003,56 +860,56 @@ public class ScriptModifier {
         }
     }
 
-    private static List<MQDataConfig> planCsvSelect(List<Map<String, Object>> csvConfigs, Element planHashTree) {
-        List<MQDataConfig> globalMQDataConfig = new ArrayList<>();
+    private static List<MessageQueueDataConfig> planCsvSelect(List<Map<String, Object>> csvConfigs, Element planHashTree) {
+        List<MessageQueueDataConfig> globalMessageQueueDataConfig = new ArrayList<>();
         List<Element> tobeRemovedElements = new ArrayList<>();
         List<Element> elements = planHashTree.elements();
         for (int i = 0; i < elements.size(); i++) {
             Element currentElement = elements.get(i);
-            if (currentElement.getName().equalsIgnoreCase("CSVDataSet")) {
+            if ("CSVDataSet".equalsIgnoreCase(currentElement.getName())) {
                 String csvFileName = null;
                 String variableNames = null;
                 List<Element> csvPropertyElements = currentElement.elements("stringProp");
                 for (Element csvPropertyElement : csvPropertyElements) {
                     Attribute attribute = csvPropertyElement.attribute("name");
                     String value = attribute.getValue();
-                    if (value != null && value.equalsIgnoreCase("filename")) {
+                    if ("filename".equalsIgnoreCase(value)) {
                         csvFileName = csvPropertyElement.getText();
                     }
-                    if (value != null && value.equalsIgnoreCase("variableNames")) {
+                    if ("variableNames".equalsIgnoreCase(value)) {
                         variableNames = csvPropertyElement.getText();
                     }
                 }
                 Map<String, Object> csvConfig = nameMatch(csvConfigs, csvFileName);
                 if (csvConfig != null) {
-                    MQDataConfig mqDataConfig = new MQDataConfig();
-                    mqDataConfig.config = csvConfig;
-                    mqDataConfig.variableNames = variableNames;
-                    globalMQDataConfig.add(mqDataConfig);
+                    MessageQueueDataConfig messageQueueDataConfig = new MessageQueueDataConfig();
+                    messageQueueDataConfig.config = csvConfig;
+                    messageQueueDataConfig.variableNames = variableNames;
+                    globalMessageQueueDataConfig.add(messageQueueDataConfig);
                 }
                 tobeRemovedElements.add(currentElement);
                 if (i + 1 < elements.size()) {
                     Element next = elements.get(i + 1);
-                    if (next.getName().equalsIgnoreCase("hashTree")) {
+                    if ("hashTree".equalsIgnoreCase(next.getName())) {
                         tobeRemovedElements.add(next);
                     }
                 }
             }
         }
         tobeRemovedElements.forEach(planHashTree::remove);
-        return globalMQDataConfig;
+        return globalMessageQueueDataConfig;
     }
 
     private static void threadGroupCsvSelect(List<Map<String, Object>> csvConfigs,
-        List<MQDataConfig> globalMQDataConfig, Element planHashTree) {
+        List<MessageQueueDataConfig> globalMessageQueueDataConfig, Element planHashTree) {
         List<Element> elements = planHashTree.elements();
         for (int i = 0; i < elements.size(); i++) {
             Element current = elements.get(i);
             if (current.getName().contains("ThreadGroup")) {
                 if (i + 1 < elements.size()) {
                     Element threadGroupHashTree = elements.get(i + 1);
-                    if (threadGroupHashTree.getName().equalsIgnoreCase("hashTree")) {
-                        threadGroupCsvModify(csvConfigs, globalMQDataConfig, threadGroupHashTree);
+                    if ("hashTree".equalsIgnoreCase(threadGroupHashTree.getName())) {
+                        threadGroupCsvModify(csvConfigs, globalMessageQueueDataConfig, threadGroupHashTree);
                     }
                 }
             }
@@ -1060,50 +917,50 @@ public class ScriptModifier {
     }
 
     private static void threadGroupCsvModify(List<Map<String, Object>> csvConfigs,
-        List<MQDataConfig> globalMQDataConfig, Element threadGroupHashTree) {
+        List<MessageQueueDataConfig> globalMessageQueueDataConfig, Element threadGroupHashTree) {
         List<Element> elements = threadGroupHashTree.elements();
         //self append to head
         List<Element> tobeRemovedElements = new ArrayList<>();
-        List<MQDataConfig> innerMqDataConfig = new ArrayList<>();
+        List<MessageQueueDataConfig> innerMessageQueueDataConfig = new ArrayList<>();
         for (int i = 0; i < elements.size(); i++) {
             Element currentElement = elements.get(i);
-            if (currentElement.getName().equalsIgnoreCase("CSVDataSet")) {
+            if ("CSVDataSet".equalsIgnoreCase(currentElement.getName())) {
                 String csvFileName = null;
                 String variableNames = null;
                 List<Element> csvPropertyElements = currentElement.elements("stringProp");
                 for (Element csvPropertyElement : csvPropertyElements) {
                     Attribute attribute = csvPropertyElement.attribute("name");
                     String value = attribute.getValue();
-                    if (value != null && value.equalsIgnoreCase("filename")) {
+                    if ("filename".equalsIgnoreCase(value)) {
                         csvFileName = csvPropertyElement.getText();
                     }
-                    if (value != null && value.equalsIgnoreCase("variableNames")) {
+                    if ("variableNames".equalsIgnoreCase(value)) {
                         variableNames = csvPropertyElement.getText();
                     }
                 }
                 Map<String, Object> csvConfig = nameMatch(csvConfigs, csvFileName);
                 if (csvConfig != null) {
-                    MQDataConfig mqDataConfig = new MQDataConfig();
-                    mqDataConfig.config = csvConfig;
-                    mqDataConfig.variableNames = variableNames;
-                    innerMqDataConfig.add(mqDataConfig);
+                    MessageQueueDataConfig messageQueueDataConfig = new MessageQueueDataConfig();
+                    messageQueueDataConfig.config = csvConfig;
+                    messageQueueDataConfig.variableNames = variableNames;
+                    innerMessageQueueDataConfig.add(messageQueueDataConfig);
                 }
                 tobeRemovedElements.add(currentElement);
                 if (i + 1 < elements.size()) {
                     Element next = elements.get(i + 1);
-                    if (next.getName().equalsIgnoreCase("hashTree")) {
+                    if ("hashTree".equalsIgnoreCase(next.getName())) {
                         tobeRemovedElements.add(next);
                     }
                 }
             }
         }
-        if (innerMqDataConfig != null && !innerMqDataConfig.isEmpty()) {
-            for (int i = 0; i < innerMqDataConfig.size(); i++) {
-                MQDataConfig config = innerMqDataConfig.get(i);
-                String nameSrvAddr = TryUtils.tryOperation(() -> String.valueOf(config.config.get("nameSrvAddr")));
+        if (innerMessageQueueDataConfig != null && !innerMessageQueueDataConfig.isEmpty()) {
+            for (int i = 0; i < innerMessageQueueDataConfig.size(); i++) {
+                MessageQueueDataConfig config = innerMessageQueueDataConfig.get(i);
+                String nameSrvAddress = TryUtils.tryOperation(() -> String.valueOf(config.config.get("nameSrvAddr")));
                 String topic = TryUtils.tryOperation(() -> String.valueOf(config.config.get("topic")));
                 String group = TryUtils.tryOperation(() -> String.valueOf(config.config.get("group")));
-                Element javaSampler = createJavaSamplerElement(nameSrvAddr, topic, group, 30_000L);
+                Element javaSampler = createJavaSamplerElement(nameSrvAddress, topic, group, 30_000L);
                 Element hashTree = createHashTreeAfterJavaSamplerElement(config.variableNames);
                 elements.add(i, javaSampler);
                 elements.add(i + 1, hashTree);
@@ -1113,13 +970,13 @@ public class ScriptModifier {
 
         //global append to head
         elements = threadGroupHashTree.elements();
-        if (globalMQDataConfig != null && !globalMQDataConfig.isEmpty()) {
-            for (int i = 0; i < globalMQDataConfig.size(); i++) {
-                MQDataConfig config = globalMQDataConfig.get(i);
-                String nameSrvAddr = TryUtils.tryOperation(() -> String.valueOf(config.config.get("nameSrvAddr")));
+        if (globalMessageQueueDataConfig != null && !globalMessageQueueDataConfig.isEmpty()) {
+            for (int i = 0; i < globalMessageQueueDataConfig.size(); i++) {
+                MessageQueueDataConfig config = globalMessageQueueDataConfig.get(i);
+                String nameSrvAddress = TryUtils.tryOperation(() -> String.valueOf(config.config.get("nameSrvAddr")));
                 String topic = TryUtils.tryOperation(() -> String.valueOf(config.config.get("topic")));
                 String group = TryUtils.tryOperation(() -> String.valueOf(config.config.get("group")));
-                Element javaSampler = createJavaSamplerElement(nameSrvAddr, topic, group, 30_000L);
+                Element javaSampler = createJavaSamplerElement(nameSrvAddress, topic, group, 30_000L);
                 Element hashTree = createHashTreeAfterJavaSamplerElement(config.variableNames);
                 elements.add(i, javaSampler);
                 elements.add(i + 1, hashTree);
@@ -1127,7 +984,7 @@ public class ScriptModifier {
         }
     }
 
-    private static Element createJavaSamplerElement(String nameServAddr,
+    private static Element createJavaSamplerElement(String nameServAddress,
         String topic,
         String group,
         Long pollTimeout) {
@@ -1164,7 +1021,7 @@ public class ScriptModifier {
         stringProp21.setText("nameSrvAddr");
         Element stringProp22 = elementProp2.addElement("stringProp");
         stringProp22.addAttribute("name", "Argument.value");
-        stringProp22.setText(nameServAddr);
+        stringProp22.setText(nameServAddress);
         Element stringProp23 = elementProp2.addElement("stringProp");
         stringProp23.addAttribute("name", "Argument.metadata");
         stringProp23.setText("=");
@@ -1220,7 +1077,7 @@ public class ScriptModifier {
         scriptCode.append("String[] array = response.split(\",\");\r\n");
         for (int i = 0; i < varNameArray.length; i++) {
             String key = varNameArray[i];
-            scriptCode.append("vars.put(\"" + key + "\", array[" + i + "]);\r\n");
+            scriptCode.append("vars.put(\"").append(key).append("\", array[").append(i).append("]);\r\n");
         }
         stringProp3.setText(scriptCode.toString());
         hashTree.addElement("hashTree");
@@ -1230,10 +1087,10 @@ public class ScriptModifier {
     private static Map<String, Object> nameMatch(List<Map<String, Object>> csvConfigs, String rawFileName) {
         String fileNameShort = rawFileName;
         if (fileNameShort.contains("/")) {
-            fileNameShort = fileNameShort.substring(fileNameShort.lastIndexOf("/") + 1, fileNameShort.length());
+            fileNameShort = fileNameShort.substring(fileNameShort.lastIndexOf("/") + 1);
         }
         if (fileNameShort.contains("\\")) {
-            fileNameShort = fileNameShort.substring(fileNameShort.lastIndexOf("\\") + 1, fileNameShort.length());
+            fileNameShort = fileNameShort.substring(fileNameShort.lastIndexOf("\\") + 1);
         }
         for (Map<String, Object> csvConfig : csvConfigs) {
             String originalFileName = TryUtils.tryOperation(() -> String.valueOf(csvConfig.get("name")));
@@ -1248,10 +1105,10 @@ public class ScriptModifier {
      * 重组共用的线程组属性
      *
      * @param threadGroupElement 线程组元素
-     * @param pressureTestMode   压力模式
-     * @param rampUp
-     * @param steps
-     * @param holdTime
+     * @param threadNum          线程数量
+     * @param rampUp             坡度
+     * @param steps              步骤
+     * @param holdTime           持续事件
      */
     private static void rebuildCommonThreadGroupSubElements(Element threadGroupElement, String threadNum, Integer rampUp, Integer steps, Integer holdTime) {
         threadGroupElement.addElement("elementProp")
@@ -1272,7 +1129,7 @@ public class ScriptModifier {
      * 线程组修改
      */
     private static void threadGroupModify(Element threadGroupContainer, PressureContext context
-            , SupportedPressureModeAbilities supportedPressureModeAbilities) {
+        , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //压力模式
         EnginePressureConfig pressureConfig = context.getPressureConfig();
         //测试计划的hashTree下所有节点
@@ -1285,13 +1142,13 @@ public class ScriptModifier {
             }
             NodeTypeEnum type = NodeTypeEnum.value(hashTreeSubElement.getName());
             //非线程组节点不处理
-            if (null == type || type != NodeTypeEnum.THREAD_GROUP) {
+            if (type != NodeTypeEnum.THREAD_GROUP) {
                 continue;
             }
 
             switch (context.getPressureScene()) {
                 case TRY_RUN:
-                    modeifyTryRunThreadGroup(hashTreeSubElement, supportedPressureModeAbilities);
+                    modifyTryRunThreadGroup(hashTreeSubElement, supportedPressureModeAbilities);
                     break;
                 case FLOW_DEBUG:
                     modifyFlowDebugThreadGroup(hashTreeSubElement, supportedPressureModeAbilities);
@@ -1300,7 +1157,7 @@ public class ScriptModifier {
                     modifyInspectionThreadGroup(hashTreeSubElement, pressureConfig, supportedPressureModeAbilities);
                     break;
                 case DEFAULT:
-                    modeifyDefautlThreadGroup(hashTreeSubElement, context, pressureConfig);
+                    modifyDefaultThreadGroup(hashTreeSubElement, context, pressureConfig);
                     break;
                 default:
                     break;
@@ -1311,10 +1168,10 @@ public class ScriptModifier {
     /**
      * 常规：修改线程组
      */
-    private static void modeifyDefautlThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
+    private static void modifyDefaultThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
         //没有配置信息的节点不处理
         if (null == config) {
-            logger.warn("config is null!");
+            log.warn("config is null!");
             return;
         }
         String transaction = DomUtils.getTransaction(threadGroupElement);
@@ -1325,7 +1182,7 @@ public class ScriptModifier {
             }
         }
         if (null == threadGroupConfig) {
-            logger.warn("threadGroupConfig is null!transaction="+transaction+", map="+JsonUtils.toJson(config.getThreadGroupConfigMap()));
+            log.warn("threadGroupConfig is null!transaction=" + transaction + ", map=" + JsonUtils.toJson(config.getThreadGroupConfigMap()));
             return;
         }
         ThreadGroupTypeEnum type = ThreadGroupTypeEnum.value(threadGroupConfig.getType());
@@ -1354,7 +1211,7 @@ public class ScriptModifier {
         Integer rampUp = tgConfig.getRampUp();
         Integer holdTime = context.getDuration();
         if (null != context.getPodCount() && context.getPodCount() > 1) {
-            targetLevel = (int) Math.ceil((double)targetLevel/context.getPodCount());
+            targetLevel = (int)Math.ceil((double)targetLevel / context.getPodCount());
         }
         if (PressureTestModeEnum.FIXED == mode) {
             steps = 0;
@@ -1370,8 +1227,8 @@ public class ScriptModifier {
         threadGroupElement.clearContent();
         //重填内容
         rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(targetLevel), rampUp, steps, holdTime);
-//        //添加目标值
-//        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(targetLevel));
+        //        //添加目标值
+        //        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(targetLevel));
     }
 
     /**
@@ -1379,18 +1236,16 @@ public class ScriptModifier {
      */
     private static void modifyDefaultTpsThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
         int tpsThreadMode = CommonUtil.getValue(0, config, EnginePressureConfig::getTpsThreadMode);
-        switch (tpsThreadMode) {
-            //老板tps模式实现
-            case 1:
-                modifyDefaultTps1ThreadGroup(threadGroupElement, context, config, tgConfig);
-                addThroughputControl(threadGroupElement, context);
-                break;
-            //新版tps模式实现
-            default:
-                int threadNum = getThreadNum(threadGroupElement, context, config, tgConfig);
-                modifyDefaultTps0ThreadGroup(threadGroupElement, context, config, tgConfig, threadNum);
-                addConstantsThroughputControl(threadGroupElement, context, config, threadNum);
-                break;
+        //老板tps模式实现
+        if (tpsThreadMode == 1) {
+            modifyDefaultTps1ThreadGroup(threadGroupElement, context, config, tgConfig);
+            addThroughputControl(threadGroupElement, context);
+        }
+        //新版tps模式实现
+        else {
+            int threadNum = getThreadNum(threadGroupElement, context, config, tgConfig);
+            modifyDefaultTps0ThreadGroup(threadGroupElement, context, config, tgConfig, threadNum);
+            addConstantsThroughputControl(threadGroupElement, context, config, threadNum);
         }
     }
 
@@ -1404,7 +1259,7 @@ public class ScriptModifier {
         Integer rampUp = tgConfig.getRampUp();
         Integer holdTime = context.getDuration();
         if (null != context.getPodCount() && context.getPodCount() > 1) {
-            tpsTargetLevel = tpsTargetLevel/context.getPodCount();
+            tpsTargetLevel = tpsTargetLevel / context.getPodCount();
         }
         if (PressureTestModeEnum.FIXED == mode) {
             steps = 0;
@@ -1424,9 +1279,6 @@ public class ScriptModifier {
         //添加限制并发数 这里不需要限制
         //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
         DomUtils.addBasePropElement(threadGroupElement, "ConcurrencyLimit", Constants.TPS_MODE_CONCURRENCY_LIMIT);
-
-//        //添加目标值，这里的值只是在脚本里显示，真实值会从redis取
-//        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(tpsTargetLevel));
     }
 
     private static int getThreadNum(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
@@ -1441,29 +1293,29 @@ public class ScriptModifier {
             if (null != businessMap) {
                 //按tps目标比例计算最大线程数
                 int totalTps = businessMap.values().stream().filter(Objects::nonNull)
-                        .map(BusinessActivityConfig::getTps)
-                        .filter(Objects::nonNull)
-                        .mapToInt(d -> d)
-                        .sum();
+                    .map(BusinessActivityConfig::getTps)
+                    .filter(Objects::nonNull)
+                    .mapToInt(d -> d)
+                    .sum();
                 List<Element> children = DomUtils.findAllChildElement(threadGroupElement);
                 int tps = 1;
                 if (CollectionUtils.isNotEmpty(children)) {
                     tps = children.stream().filter(Objects::nonNull)
-                            .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
-                            .map(DomUtils::getTransaction)
-                            .filter(StringUtils::isNotBlank)
-                            .map(businessMap::get)
-                            .filter(Objects::nonNull)
-                            .map(BusinessActivityConfig::getTps)
-                            .filter(Objects::nonNull)
-                            .mapToInt(d -> d)
-                            .sum();
+                        .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
+                        .map(DomUtils::getTransaction)
+                        .filter(StringUtils::isNotBlank)
+                        .map(businessMap::get)
+                        .filter(Objects::nonNull)
+                        .map(BusinessActivityConfig::getTps)
+                        .filter(Objects::nonNull)
+                        .mapToInt(d -> d)
+                        .sum();
                 }
                 threadNum = BigDecimal.valueOf(tps)
-                        .divide(BigDecimal.valueOf(totalTps <= 0 ? 1 : totalTps), 10, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(maxThreadNum))
-                        .setScale(0, RoundingMode.CEILING)
-                        .intValue();
+                    .divide(BigDecimal.valueOf(totalTps <= 0 ? 1 : totalTps), 10, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(maxThreadNum))
+                    .setScale(0, RoundingMode.CEILING)
+                    .intValue();
             } else {
                 threadNum = maxThreadNum;
             }
@@ -1481,7 +1333,7 @@ public class ScriptModifier {
         Integer rampUp = tgConfig.getRampUp();
         Integer holdTime = context.getDuration();
         if (null != context.getPodCount() && context.getPodCount() > 1) {
-            tpsTargetLevel = tpsTargetLevel/context.getPodCount();
+            tpsTargetLevel = tpsTargetLevel / context.getPodCount();
         }
         if (PressureTestModeEnum.FIXED == mode) {
             steps = 0;
@@ -1502,22 +1354,22 @@ public class ScriptModifier {
 
         //重填内容
         rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(threadNum), rampUp, steps, holdTime);
-//        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(maxThreadNum));
+        //        DomUtils.addBasePropElement(threadGroupElement, "TargetLevel", StringUtils.valueOf(maxThreadNum));
     }
 
     /**
      * 试跑：修改线程组
      */
-    private static void modeifyTryRunThreadGroup(Element threadGroupElement, SupportedPressureModeAbilities supportedPressureModeAbilities) {
+    private static void modifyTryRunThreadGroup(Element threadGroupElement, SupportedPressureModeAbilities supportedPressureModeAbilities) {
         TryRunAbility tryRunAbility = supportedPressureModeAbilities.getPressureModeAbility(PressureSceneEnum.TRY_RUN);
         //具备脚本调试能力
-        if(null != tryRunAbility) {
+        if (null != tryRunAbility) {
             // 试跑模式
             //目前这里直接填为固定值
             threadGroupElement.setName(tryRunAbility.getAbilityName());
             Map<String, String> elementAttributes = tryRunAbility.getExtraAttributes();
-            if(elementAttributes != null) {
-                for(Map.Entry<String, String> entry : elementAttributes.entrySet()) {
+            if (elementAttributes != null) {
+                for (Map.Entry<String, String> entry : elementAttributes.entrySet()) {
                     threadGroupElement.addAttribute(entry.getKey(), entry.getValue());
                 }
             }
@@ -1525,9 +1377,9 @@ public class ScriptModifier {
             threadGroupElement.clearContent();
             //构建试跑模式线程组，目前为普通线程组，小流量（loop_nums并发） expectThroughput并发数量  发起试跑
             rebuildTryRunModeThreadGroupSubElements(threadGroupElement, tryRunAbility.getLoops(), tryRunAbility.getExpectThroughput());
-        } else{
+        } else {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "压力引擎不具备脚本调试能力");
-            logger.error("unable to try run mode, please implement EnginePressureModeAble#enableTryRunMode");
+            log.error("unable to try run mode, please implement EnginePressureModeAble#enableTryRunMode");
             System.exit(-2);
         }
     }
@@ -1538,12 +1390,12 @@ public class ScriptModifier {
     private static void modifyInspectionThreadGroup(Element threadGroupElement, EnginePressureConfig config, SupportedPressureModeAbilities supportedPressureModeAbilities) {
         InspectionAbility inspectionAbility = supportedPressureModeAbilities.getPressureModeAbility(PressureSceneEnum.INSPECTION_MODE);
         //具备巡检能力
-        if(null != inspectionAbility) {
+        if (null != inspectionAbility) {
             //目前这里直接填为固定值
             threadGroupElement.setName(inspectionAbility.getAbilityName());
             Map<String, String> elementAttributes = inspectionAbility.getExtraAttributes();
-            if(null != elementAttributes) {
-                for(Map.Entry<String, String> entry : elementAttributes.entrySet()) {
+            if (null != elementAttributes) {
+                for (Map.Entry<String, String> entry : elementAttributes.entrySet()) {
                     threadGroupElement.addAttribute(entry.getKey(), entry.getValue());
                 }
             }
@@ -1552,19 +1404,19 @@ public class ScriptModifier {
             //构建巡检模式线程组，目前为普通线程组，以一定周期（5秒、10秒，可配置）、小流量（1并发）发起巡检请求
             rebuildInspectionModeThreadGroupSubElements(threadGroupElement, config.getLoopsNum());
 
-            logger.info("组装巡检模式添加固定定时器和断言");
+            log.info("组装巡检模式添加固定定时器和断言");
             Element childrenContainerElement = DomUtils.findChildrenContainerElement(threadGroupElement);
             // 循环时间
             //addFixedTimer(hashTree3Element, enginePressureParams.get("fixed_timer"));
-            //modify by lipeng 20210609
-            // 固定定时器只能按每个请求等待固定时间，这里巡检的需求是每个线程组每隔固定时间请求，所以这里改为flow controller action组件
+            //modify by 李鹏 20210609
+            // 固定定时器只能按每个请求等待固定时间，这里巡检的需求是每个线程组每隔固定时间请求所以这里改为flow controller action组件
             addFlowControllerAction(childrenContainerElement, config.getFixedTimer());
             //modify end;
             // 增加判断断言
-            addFeanShellAssertion(childrenContainerElement);
+            addBeanShellAssertion(childrenContainerElement);
         } else {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "压力引擎不具备巡检能力");
-            logger.error("unable to try run mode, please implement EnginePressureModeAble#enableTryRunMode");
+            log.error("unable to try run mode, please implement EnginePressureModeAble#enableTryRunMode");
             System.exit(-2);
         }
     }
@@ -1575,11 +1427,11 @@ public class ScriptModifier {
     private static void modifyFlowDebugThreadGroup(Element threadGroupElement, SupportedPressureModeAbilities supportedPressureModeAbilities) {
         FlowDebugAbility flowDebugAbility = supportedPressureModeAbilities.getPressureModeAbility(PressureSceneEnum.FLOW_DEBUG);
         //具备流量调试能力
-        if(null != flowDebugAbility) {
+        if (null != flowDebugAbility) {
             threadGroupElement.setName(flowDebugAbility.getAbilityName());
             Map<String, String> elementAttributes = flowDebugAbility.getExtraAttributes();
-            if(null != elementAttributes) {
-                for(Map.Entry<String, String> entry : elementAttributes.entrySet()) {
+            if (null != elementAttributes) {
+                for (Map.Entry<String, String> entry : elementAttributes.entrySet()) {
                     threadGroupElement.addAttribute(entry.getKey(), entry.getValue());
                 }
             }
@@ -1587,9 +1439,9 @@ public class ScriptModifier {
             threadGroupElement.clearContent();
             //构建流量调试模式线程组，目前为普通线程组，固定单线程发1K条
             rebuildFlowDebugThreadGroupSubElements(threadGroupElement, flowDebugAbility.getLoops());
-        } else{
+        } else {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "压力引擎不具备流量调试模式能力");
-            logger.error("unable to flow debug mode, please implement EnginePressureModeAble#enableFlowDebugMode");
+            log.error("unable to flow debug mode, please implement EnginePressureModeAble#enableFlowDebugMode");
             System.exit(-2);
         }
     }
@@ -1597,7 +1449,7 @@ public class ScriptModifier {
     /**
      * 填充试跑模式线程组
      *
-     * @param threadGroupElement
+     * @param threadGroupElement 线程组节点
      */
     private static void rebuildTryRunModeThreadGroupSubElements(Element threadGroupElement,
         Long loops, Long expectThroughput) {
@@ -1619,38 +1471,38 @@ public class ScriptModifier {
         //试跑次数
         int tryRunTimes = Math.toIntExact(loops);
         //不支持的试跑次数
-        if(!arrayContains(TryRunAbility.TRY_RUN_SUPPORTED_TIMES, tryRunTimes)) {
+        if (!arrayContains(TryRunAbility.TRY_RUN_SUPPORTED_TIMES, tryRunTimes)) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED
-                    , "不支持的调试次数，调试次数目前支持[1, 10, 100, 1000, 10000]条的调试");
-            logger.error("不支持的调试次数，调试次数目前支持[1, 10, 100, 1000, 10000]条的调试");
+                , "不支持的调试次数，调试次数目前支持[1, 10, 100, 1000, 10000]条的调试");
+            log.error("不支持的调试次数，调试次数目前支持[1, 10, 100, 1000, 10000]条的调试");
             System.exit(-1);
         }
         //并发数
         int concurrencyNum = Math.toIntExact(expectThroughput);
         //不支持的并发数量
-        if(!arrayContains(TryRunAbility.TRY_RUN_SUPPORTED_CONURRENT_NUM, concurrencyNum)) {
+        if (!arrayContains(TryRunAbility.TRY_RUN_SUPPORTED_CONCURRENT_NUM, concurrencyNum)) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED
-                    , "不支持的调试并发数量，调试并发数量目前支持[1, 5, 10, 20, 50, 100]并发的调试");
-            logger.error("不支持的调试并发数量，调试并发数量目前支持[1, 5, 10, 20, 50, 100]并发的调试");
+                , "不支持的调试并发数量，调试并发数量目前支持[1, 5, 10, 20, 50, 100]并发的调试");
+            log.error("不支持的调试并发数量，调试并发数量目前支持[1, 5, 10, 20, 50, 100]并发的调试");
             System.exit(-1);
         }
         //并发数量不能大于试跑次数
-        if(concurrencyNum > tryRunTimes) {
+        if (concurrencyNum > tryRunTimes) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED
-                    , "脚本调试并发数量不能大于调试次数，调试次数为："+tryRunTimes+", 并发数量为："+concurrencyNum);
-            logger.error("脚本调试并发数量不能大于调试次数，调试次数为："+tryRunTimes+", 并发数量为："+concurrencyNum);
+                , "脚本调试并发数量不能大于调试次数，调试次数为：" + tryRunTimes + ", 并发数量为：" + concurrencyNum);
+            log.error("脚本调试并发数量不能大于调试次数，调试次数为：" + tryRunTimes + ", 并发数量为：" + concurrencyNum);
             System.exit(-1);
         }
         //循环次数 等于 试跑次数除以并发数量
         int loopCount = tryRunTimes / concurrencyNum;
         elementProp.addElement("stringProp").addAttribute("name", "LoopController.loops")
-            .setText(loopCount+"");
+            .setText(loopCount + "");
         threadGroupElement.addElement("stringProp")
-                .addAttribute("name", "ThreadGroup.num_threads").setText(concurrencyNum+"");
+            .addAttribute("name", "ThreadGroup.num_threads").setText(concurrencyNum + "");
         threadGroupElement.addElement("stringProp")
-                .addAttribute("name", "ThreadGroup.ramp_time").setText("1");
+            .addAttribute("name", "ThreadGroup.ramp_time").setText("1");
         threadGroupElement.addElement("boolProp")
-                .addAttribute("name", "ThreadGroup.scheduler").setText("false");
+            .addAttribute("name", "ThreadGroup.scheduler").setText("false");
         threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.duration");
         threadGroupElement.addElement("stringProp").addAttribute("name", "ThreadGroup.delay");
     }
@@ -1658,7 +1510,7 @@ public class ScriptModifier {
     /**
      * 填充巡检模式线程组
      *
-     * @param threadGroupElement
+     * @param threadGroupElement 线程组节点
      */
     private static void rebuildInspectionModeThreadGroupSubElements(Element threadGroupElement,
         Long loops) {
@@ -1689,7 +1541,8 @@ public class ScriptModifier {
     /**
      * 充填流量调试模式线程组
      *
-     * @param hashTreeSubElement
+     * @param threadGroupElement 线程组节点
+     * @param loops              次数
      */
     private static void rebuildFlowDebugThreadGroupSubElements(Element threadGroupElement, Long loops) {
         threadGroupElement.addElement("stringProp")
@@ -1709,7 +1562,7 @@ public class ScriptModifier {
             .setText("false");
         elementProp.addElement("stringProp")
             .addAttribute("name", "LoopController.loops")
-            .setText(loops+"");
+            .setText(loops + "");
 
         threadGroupElement.addElement("stringProp")
             .addAttribute("name", "ThreadGroup.num_threads")
@@ -1728,7 +1581,7 @@ public class ScriptModifier {
 
     public static void headerManagerModify(Document document, String sceneId, String reportId, String customerId) {
         ///collectionProp/elementProp
-        List<Node> nodes = XpathUtils.searchNodeByXPath(document,"//HeaderManager");
+        List<Node> nodes = XpathUtils.searchNodeByXmlPath(document, "//HeaderManager");
         // 一定存在的情况处理
         if (nodes != null && nodes.size() > 0) {
             for (Node node : nodes) {
@@ -1787,7 +1640,7 @@ public class ScriptModifier {
         stringProp13.addAttribute("name", "Argument.metadata");
         stringProp13.setText("=");
 
-        /****************influxDB****************/
+        /* influxDB */
         Element elementProp2 = collectionProp.addElement("elementProp");
         elementProp2.addAttribute("name", "influxdbUrl");
         elementProp2.addAttribute("elementType", "Argument");
@@ -1803,9 +1656,9 @@ public class ScriptModifier {
         Element stringProp23 = elementProp2.addElement("stringProp");
         stringProp23.addAttribute("name", "Argument.metadata");
         stringProp23.setText("=");
-        /****************influxDB****************/
+        /* influxDB */
 
-        /****************application****************/
+        /* application */
         Element elementProp3 = collectionProp.addElement("elementProp");
         elementProp3.addAttribute("name", "application");
         elementProp3.addAttribute("elementType", "Argument");
@@ -1820,9 +1673,9 @@ public class ScriptModifier {
         Element stringProp33 = elementProp3.addElement("stringProp");
         stringProp33.addAttribute("name", "Argument.metadata");
         stringProp33.setText("=");
-        /****************application****************/
+        /* application */
 
-        /****************measurement****************/
+        /* measurement */
         Element elementProp4 = collectionProp.addElement("elementProp");
         elementProp4.addAttribute("name", "measurement");
         elementProp4.addAttribute("elementType", "Argument");
@@ -1835,11 +1688,11 @@ public class ScriptModifier {
         Element stringProp43 = elementProp4.addElement("stringProp");
         stringProp43.addAttribute("name", "Argument.metadata");
         stringProp43.setText("=");
-        /****************measurement****************/
+        /* measurement */
 
-        /****************summaryOnly****************/
+        /* summaryOnly */
         Element elementProp5 = collectionProp.addElement("elementProp");
-        // flase的情况下，输出每条数据的详情报
+        // false 的情况下，输出每条数据的详情报
         elementProp5.addAttribute("name", "summaryOnly");
         elementProp5.addAttribute("elementType", "Argument");
         Element stringProp51 = elementProp5.addElement("stringProp");
@@ -1852,9 +1705,9 @@ public class ScriptModifier {
         Element stringProp53 = elementProp5.addElement("stringProp");
         stringProp53.addAttribute("name", "Argument.metadata");
         stringProp53.setText("=");
-        /****************summaryOnly****************/
+        /* summaryOnly */
 
-        /****************samplersRegex****************/
+        /* samplersRegex */
         Element elementProp6 = collectionProp.addElement("elementProp");
         elementProp6.addAttribute("name", "samplersRegex");
         elementProp6.addAttribute("elementType", "Argument");
@@ -1867,9 +1720,9 @@ public class ScriptModifier {
         Element stringProp63 = elementProp6.addElement("stringProp");
         stringProp63.addAttribute("name", "Argument.metadata");
         stringProp63.setText("=");
-        /****************samplersRegex****************/
+        /* samplersRegex */
 
-        /****************percentiles****************/
+        /* percentiles */
         Element elementProp7 = collectionProp.addElement("elementProp");
         elementProp7.addAttribute("name", "percentiles");
         elementProp7.addAttribute("elementType", "Argument");
@@ -1882,9 +1735,9 @@ public class ScriptModifier {
         Element stringProp73 = elementProp7.addElement("stringProp");
         stringProp73.addAttribute("name", "Argument.metadata");
         stringProp73.setText("=");
-        /****************percentiles****************/
+        /* percentiles */
 
-        /****************testTitle****************/
+        /* testTitle */
         Element elementProp8 = collectionProp.addElement("elementProp");
         elementProp8.addAttribute("name", "testTitle");
         elementProp8.addAttribute("elementType", "Argument");
@@ -1897,9 +1750,9 @@ public class ScriptModifier {
         Element stringProp83 = elementProp8.addElement("stringProp");
         stringProp83.addAttribute("name", "Argument.metadata");
         stringProp83.setText("=");
-        /****************testTitle****************/
+        /* testTitle */
 
-        /****************eventTags****************/
+        /* eventTags */
         Element elementProp9 = collectionProp.addElement("elementProp");
         elementProp9.addAttribute("name", "eventTags");
         elementProp9.addAttribute("elementType", "Argument");
@@ -1913,9 +1766,9 @@ public class ScriptModifier {
         Element stringProp93 = elementProp9.addElement("stringProp");
         stringProp93.addAttribute("name", "Argument.metadata");
         stringProp93.setText("=");
-        /****************eventTags****************/
+        /* eventTags */
 
-        /****************businessMap****************/
+        /* businessMap */
         Element elementProp13 = collectionProp.addElement("elementProp");
         elementProp13.addAttribute("name", "businessMap");
         elementProp13.addAttribute("elementType", "Argument");
@@ -1926,40 +1779,26 @@ public class ScriptModifier {
 
         Element stringProp132 = elementProp13.addElement("stringProp");
         stringProp132.addAttribute("name", "Argument.value");
-//        Map<String, String> map = Maps.newHashMap();
-//        if (null != context.getBusinessMap()) {
-//            Map<String, Integer> mapmap = context.getBusinessMap().values().stream().filter(Objects::nonNull)
-//                    .filter(d -> null != d.getRt())
-//                    .collect(Collectors.toMap(BusinessActivityConfig::getBindRef, BusinessActivityConfig::getRt));
-//
-//            for (Map.Entry<String, BusinessActivityConfig> entry : context.getBusinessMap().entrySet()) {
-//                String key = entry.getKey();
-//                Integer value = entry.getValue().getRt();
-//                //todo 写死rt,后续可以根据配置
-//                map.put(key + "_rt", value);
-//            }
-//        }
+
         stringProp132.setText(JsonUtils.toJson(context.getBusinessMap()));
         Element stringProp133 = elementProp13.addElement("stringProp");
         stringProp133.addAttribute("name", "Argument.metadata");
         stringProp133.setText("=");
-        /****************businessMap****************/
+        /* businessMap */
 
-        String podNum = context.getPodCount() == 1 ? "1" : System.getProperty("pod.number");
-
-        /***************结束*****************/
+        /* 结束 */
         Element stringProp = backendListener.addElement("stringProp");
         stringProp.addAttribute("name", "classname");
         stringProp.setText("org.apache.jmeter.visualizers.backend.influxdb.InfluxdbBackendListenerClient");
         //添加队列长度
-        Element queneStringProp = backendListener.addElement("stringProp");
-        queneStringProp.addAttribute("name", "QUEUE_SIZE");
+        Element queueStringProp = backendListener.addElement("stringProp");
+        queueStringProp.addAttribute("name", "QUEUE_SIZE");
         //队列长度
-        queneStringProp.setText(context.getPressureEngineBackendQueueCapacity());
+        queueStringProp.setText(context.getPressureEngineBackendQueueCapacity());
         element.addElement("hashTree");
     }
 
-    private static class MQDataConfig {
+    private static class MessageQueueDataConfig {
         public Map<String, Object> config;
         public String variableNames;
     }
@@ -1967,10 +1806,10 @@ public class ScriptModifier {
     /**
      * 根据属性值获取元素
      *
-     * @param root
-     * @param attributeKey
-     * @param attributeValues
-     * @return
+     * @param root            根节点
+     * @param attributeKey    属性名称
+     * @param attributeValues 属性值
+     * @return 节点
      */
     private static List<Element> getAllElementByAttribute(Element root, String attributeKey,
         List<String> attributeValues) {
@@ -1982,23 +1821,23 @@ public class ScriptModifier {
     /**
      * 递归获取元素
      *
-     * @param result
-     * @param elements
-     * @param attributeKey
-     * @param attributeValues
+     * @param result          结果
+     * @param elements        元素
+     * @param attributeKey    参数名称
+     * @param attributeValues 参数值
      */
-    private static void selectElement(List<Element> result, List elements, String attributeKey,
+    private static void selectElement(List<Element> result, List<?> elements, String attributeKey,
         List<String> attributeValues) {
         if (elements == null || elements.size() == 0) {
             return;
         }
-        for (Iterator it = elements.iterator(); it.hasNext(); ) {
-            Element element = (Element)it.next();
+        for (Object o : elements) {
+            Element element = (Element)o;
             //获取test
             if (attributeValues.contains(element.attributeValue(attributeKey))) {
                 result.add(element);
             }
-            List childElements = element.elements();
+            List<?> childElements = element.elements();
             selectElement(result, childElements, attributeKey, attributeValues);
         }
     }
@@ -2008,19 +1847,19 @@ public class ScriptModifier {
         for (Element element : allElement) {
             List<Element> stringPropList = new ArrayList<>();
             selectElement("stringProp", element.elements(), stringPropList);
-            if (stringPropList != null && stringPropList.size() != 0) {
+            if (stringPropList.size() != 0) {
                 String attachmentArgsValue = "";
                 for (Element ele : stringPropList) {
                     if (ele.attributeValue("name") != null && ele.attributeValue("name").startsWith(
-                            "FIELD_DUBBO_ATTACHMENT_ARGS_KEY")
-                            && "p-pradar-cluster-test".equals(ele.getText())) {
+                        "FIELD_DUBBO_ATTACHMENT_ARGS_KEY")
+                        && "p-pradar-cluster-test".equals(ele.getText())) {
                         String attributeValue = ele.attributeValue("name");
                         attachmentArgsValue = attributeValue.replace("KEY", "VALUE");
                     }
                 }
                 if (StringUtils.isNotBlank(attachmentArgsValue)) {
                     Element dubboAttachmentValue = selectElementByEleNameAndAttr("stringProp", "name",
-                            attachmentArgsValue, element.elements());
+                        attachmentArgsValue, element.elements());
                     if (dubboAttachmentValue != null && "true".equals(dubboAttachmentValue.getText())) {
                         dubboAttachmentValue.setText("false");
                     }
@@ -2036,8 +1875,7 @@ public class ScriptModifier {
         return result;
     }
 
-    private static Element selectElementByEleNameAndAttr(String elementName, String attributeName, String attributeValue,
-                                                  List elements) {
+    private static Element selectElementByEleNameAndAttr(String elementName, String attributeName, String attributeValue, List<?> elements) {
         if (elements == null || elements.size() == 0) {
             return null;
         }
@@ -2047,28 +1885,29 @@ public class ScriptModifier {
                 return element;
             }
             Element childElement = selectElementByEleNameAndAttr(elementName, attributeName, attributeValue,
-                    element.elements());
+                element.elements());
             if (childElement != null) {
                 return childElement;
             }
         }
         return null;
     }
+
     private static void updateJmxHttpPressTestTags(Document document) {
         List<Element> allElement = getAllElement("HeaderManager", document);
-        if (allElement != null && allElement.size() != 0) {
+        if (allElement.size() != 0) {
             List<Element> allElementProp = new ArrayList<>();
             for (Element headerElement : allElement) {
                 selectElement("elementProp", headerElement.elements(), allElementProp);
             }
-            if (allElementProp != null && allElementProp.size() != 0) {
+            if (allElementProp.size() != 0) {
                 for (Element elementProp : allElementProp) {
                     Element nameElement = selectElementByEleNameAndAttr("stringProp", "name", "Header.name",
-                            elementProp.elements());
+                        elementProp.elements());
                     Element valueElement = selectElementByEleNameAndAttr("stringProp", "name", "Header.value",
-                            elementProp.elements());
+                        elementProp.elements());
                     if (nameElement != null && valueElement != null && "User-Agent".equals(nameElement.getText())
-                            && "PerfomanceTest".equals(valueElement.getText())) {
+                        && "PerfomanceTest".equals(valueElement.getText())) {
                         valueElement.setText("FlowDebug");
                     }
                 }
@@ -2076,17 +1915,16 @@ public class ScriptModifier {
         }
     }
 
-
-    private static void selectElement(String elementName, List elements, List<Element> result) {
+    private static void selectElement(String elementName, List<?> elements, List<Element> result) {
         if (elements == null || elements.size() == 0) {
             return;
         }
-        for (Iterator it = elements.iterator(); it.hasNext(); ) {
-            Element element = (Element)it.next();
+        for (Object o : elements) {
+            Element element = (Element)o;
             if (element.getName().equals(elementName)) {
                 result.add(element);
             }
-            List childElements = element.elements();
+            List<?> childElements = element.elements();
             selectElement(elementName, childElements, result);
         }
     }
@@ -2094,20 +1932,20 @@ public class ScriptModifier {
     /**
      * 将tps写入redis
      *
-     * @param enginePressureParams
-     * @param sceneId
-     * @param reportId
-     * @param customerId
+     * @param enginePressureParams 施压参数
+     * @param sceneId              场景主键
+     * @param reportId             报告主键
+     * @param customerId           租户主键
      */
     private static void writeTpsTargetToRedis(Map<String, Object> enginePressureParams, Long sceneId, Long reportId,
-                                       Long customerId) {
+        Long customerId) {
         //单个pod目标tps
         String tpsTargetLevel = String.valueOf(enginePressureParams.get("tpsTargetLevel"));
         if (StringUtils.isBlank(tpsTargetLevel)) {
-            logger.error("TPS模式下，tpsTargetLevel不能为空。");
+            log.error("TPS模式下，tpsTargetLevel不能为空。");
             //  通知下
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
-                    "TPS模式下，tpsTargetLevel不能为空。");
+                "TPS模式下，tpsTargetLevel不能为空。");
             System.exit(-1);
             return;
         }
@@ -2130,42 +1968,42 @@ public class ScriptModifier {
         redisConfig.setMaxTotal(1);
         redisConfig.setTimeout(3000);
 
-        RedisUtil redisUtil = null;
+        RedisUtil redisUtil;
         try {
             redisUtil = RedisUtil.getInstance(redisConfig);
 
-            //改为hset 将压测实例所有信息存储到一个hash中
+            //改为redis hash set 将压测实例所有信息存储到一个hash中
             redisUtil.hset(String.format(
-                    JmeterConstants.PRESSURE_ENGINE_INSTANCE_REDIS_KEY_FORMAT
-                    , sceneIdString
-                    , reportIdString
-                    , customerIdString), JmeterConstants.REDIS_TPS_LIMIT_FIELD, tpsTargetLevel);
+                JmeterConstants.PRESSURE_ENGINE_INSTANCE_REDIS_KEY_FORMAT
+                , sceneIdString
+                , reportIdString
+                , customerIdString), JmeterConstants.REDIS_TPS_LIMIT_FIELD, tpsTargetLevel);
             //获取所有业务活动
             List<Map<String, String>> businessActivities = (List<Map<String, String>>)enginePressureParams
-                    .get("businessActivities");
+                .get("businessActivities");
             //只有是业务流程 也就是业务活动大于1个的时候才需要在redis添加吞吐量的百分比
             if (businessActivities != null && businessActivities.size() > 1) {
                 // elementTestName对应的百分比
                 Map<String, String> businessActivityMap = businessActivities.stream()
-                        .collect(Collectors.toMap(map -> map.get("elementTestName")
-                                , map -> map.get("throughputPercent")));
+                    .collect(Collectors.toMap(map -> map.get("elementTestName")
+                        , map -> map.get("throughputPercent")));
                 for (Map.Entry<String, String> entry : businessActivityMap.entrySet()) {
                     redisUtil.setex(String.format(
-                            JmeterConstants.REDIS_ACTIVITY_PERCENTAGE_KEY_FORMAT
-                            , sceneIdString
-                            , reportIdString
-                            , customerIdString
-                            , ScriptModifier.getSampleThroughputControllerTestname(entry.getKey())
+                        JmeterConstants.REDIS_ACTIVITY_PERCENTAGE_KEY_FORMAT
+                        , sceneIdString
+                        , reportIdString
+                        , customerIdString
+                        , ScriptModifier.getSampleThroughputControllerTestname(entry.getKey())
                     ), JmeterConstants.REDIS_TPS_LIMIT_KEY_EXPIRES, entry.getValue());
                 }
             }
         } catch (Exception e) {
-            logger.error("Redis 连接失败，redisAddress is {}， redisPort is {}， encryptRedisPassword is {}"
-                    , engineRedisAddress, engineRedisPort, engineRedisPassword);
-            logger.error("失败详细错误栈：", e);
+            log.error("Redis 连接失败，redisAddress is {}， redisPort is {}， encryptRedisPassword is {}"
+                , engineRedisAddress, engineRedisPort, engineRedisPassword);
+            log.error("失败详细错误栈：", e);
             //  通知下
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
-                    "TPS模式下，Redis 连接失败，" + e.getMessage());
+                "TPS模式下，Redis 连接失败，" + e.getMessage());
             System.exit(-1);
         }
     }
@@ -2173,16 +2011,14 @@ public class ScriptModifier {
     /**
      * 禁用脚本自带ResultCollector
      *
-     * @param elements
+     * @param elements 节点
      */
     private static void forbidResultCollector(List<Element> elements) {
         if (null != elements && elements.size() > 0) {
             for (Element element : elements) {
                 List<Element> resultCollector = element.elements("ResultCollector");
                 if (null != resultCollector && !resultCollector.isEmpty()) {
-                    resultCollector.forEach(item -> {
-                        item.addAttribute("enabled", "false");
-                    });
+                    resultCollector.forEach(item -> item.addAttribute("enabled", "false"));
                 }
                 List<Element> nextLevel = element.elements("hashTree");
                 if (nextLevel != null && nextLevel.size() > 0) {
@@ -2199,7 +2035,7 @@ public class ScriptModifier {
         if (CollectionUtils.isEmpty(elements)) {
             return;
         }
-        for (int i = 0; i< elements.size(); i++) {
+        for (int i = 0; i < elements.size(); i++) {
             Element element = elements.get(i);
             if (null == element) {
                 continue;
@@ -2210,7 +2046,7 @@ public class ScriptModifier {
             }
             modifyElementTestName(element);
 
-            Element childContainer = elements.get(i+1);
+            Element childContainer = elements.get(i + 1);
             if ("hashTree".equals(childContainer.getName())) {
                 modifyTestName(DomUtils.elements(childContainer));
             }
@@ -2262,20 +2098,7 @@ public class ScriptModifier {
             return;
         }
         String name = element.getName();
-        if ("TransactionController".equals(name)) {
-            //逻辑事务控制器
-            //勾选Generate parent sample也能拿到取样器的数据，因此可以不修改脚本，以免其他问题产生
-//            List<Element> propElements = DomUtils.elements(element);
-//            if (CollectionUtils.isNotEmpty(propElements)) {
-//                for (Element p : propElements) {
-//                    Attribute attr = p.attribute("name");
-//                    //Generate parent sample 设置为false；Include duriation of timer and pre-post processor in generated sample 设置为false
-//                    if ("TransactionController.includeTimers".equals(attr.getValue()) || "TransactionController.parent".equals(attr.getValue())) {
-//                        p.setText("false");
-//                    }
-//                }
-//            }
-        } else if ("LoopController".equals(name)) {
+        if ("LoopController".equals(name)) {
             //循环控制器
             List<Element> propElements = DomUtils.elements(element);
             if (CollectionUtils.isNotEmpty(propElements)) {
@@ -2286,7 +2109,7 @@ public class ScriptModifier {
                         p.setText("false");
                     } else if ("LoopController.loops".equals(attr.getValue())) {
                         int loops = NumberUtils.parseInt(p.getText());
-                        if  (loops <= 0) {
+                        if (loops <= 0) {
                             p.setText("1");
                         } else if (loops > 100) {
                             p.setText("100");
@@ -2314,7 +2137,7 @@ public class ScriptModifier {
                 continue;
             }
             String nameAttrValue = nameAttr.getValue();
-            if (null == nameAttrValue || !nameAttrValue.equals("TestPlan.user_define_classpath")) {
+            if (!"TestPlan.user_define_classpath".equals(nameAttrValue)) {
                 continue;
             }
             // jar
@@ -2322,7 +2145,7 @@ public class ScriptModifier {
                 stringPropElement.setText(buildJarFilePathListString(jarFiles));
                 break;
             } catch (Exception e) {
-                logger.warn(e.getMessage(), e);
+                log.warn(e.getMessage(), e);
             }
         }
     }

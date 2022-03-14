@@ -1,91 +1,90 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.google.common.io.Files;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Create by xuyh at 2020/4/18 16:00.
+ * @author xuyh
  */
+@Slf4j
 public class FileUtils {
-    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
-
-    public static File createFileDE(String filePathName) {
+    /**
+     * 创建文件 - 预删除
+     * <p>如果文件存在，会删除文件后新建一个文件</p>
+     *
+     * @param filePathName 文件路径
+     * @return 空白的文件
+     */
+    public static File createFilePreDelete(String filePathName) {
         File file = new File(filePathName);
         if (file.exists()) {
-            if (!file.delete())
-                return null;
+            if (!file.delete()) {return null;}
         }
-        if (!makeDir(file.getParentFile()))
-            return null;
+        if (!makeDir(file.getParentFile())) {return null;}
         try {
-            if (!file.createNewFile())
-                return null;
+            if (!file.createNewFile()) {return null;}
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
         return file;
     }
 
+    /**
+     * 创建文件夹
+     *
+     * @param dir 文件夹路径
+     * @return 是否创建成功
+     */
     public static boolean makeDir(File dir) {
         if (!dir.exists()) {
             File parent = dir.getParentFile();
-            if (parent != null)
-                makeDir(parent);
+            if (parent != null) {makeDir(parent);}
             return dir.mkdir();
         }
         return true;
     }
 
+    /**
+     * 获取目录下的文件
+     *
+     * @param dir          目录地址
+     * @param fileEndsWith 文件后缀名
+     * @return 文件列表
+     */
     public static List<File> getDirectoryFiles(String dir, String fileEndsWith) {
-        List<File> scriptFiles = new ArrayList<>();
         if (dir == null) {
             return null;
         }
         File fileDir = new File(dir);
         if (!fileDir.isDirectory()) {
-            logger.warn("Expected a dir, but not: '{}'", fileDir.getPath());
+            log.warn("应该是文件目录，但不是: '{}'", fileDir.getPath());
         }
         if (!fileDir.isAbsolute()) {
-            logger.warn("Expected a absolute path, bu not: '{}'", fileDir.getPath());
+            log.warn("应该是绝对路径，但不是: '{}'", fileDir.getPath());
         }
-        File[] files = fileDir.listFiles(file -> {
-            if (fileEndsWith == null) {
-                return true;
-            } else {
-                return file.getName().endsWith(fileEndsWith);
-            }
-        });
-        if (files == null || files.length == 0) {
-            return null;
-        }
+        File[] files = fileDir.listFiles(file -> fileEndsWith == null || file.getName().endsWith(fileEndsWith));
+        /*
+         * 如果没有,则返回null
+         * ps:不是很明白这个逻辑
+         */
+        if (files == null || files.length == 0) {return null;}
 
-        scriptFiles.addAll(Arrays.asList(files));
-        return scriptFiles;
+        return new ArrayList<>(Arrays.asList(files));
     }
 
+    /**
+     * 删除目录
+     *
+     * @param dir 目录路径
+     * @return 操作是否成功
+     */
     public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
@@ -100,24 +99,32 @@ public class FileUtils {
         return dir.delete();
     }
 
-    public static boolean writeTextFile(String content, String filePathName) {
-        File file = createFileDE(filePathName);
+    /**
+     * 写入文本到文件
+     * <p>会覆盖旧文件</p>
+     *
+     * @param content  文本内容
+     * @param filePath 文件路径
+     * @return 操作是否成功
+     */
+    public static boolean writeTextFile(String content, String filePath) {
+        File file = createFilePreDelete(filePath);
         if (file == null) {
             return false;
         }
         OutputStreamWriter writer = null;
         try {
-            writer = new OutputStreamWriter(new FileOutputStream(file), Charset.forName("UTF-8"));
+            writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
             writer.write(content);
             writer.flush();
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         } finally {
             if (writer != null) {
                 try {
                     writer.close();
                 } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
+                    log.warn(e.getMessage(), e);
                 }
             }
         }
@@ -128,20 +135,20 @@ public class FileUtils {
         InputStreamReader reader = null;
         StringBuilder stringBuilder = new StringBuilder();
         try {
-            reader = new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8"));
+            reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
             char[] buffer = new char[32];
             int length;
             while ((length = reader.read(buffer)) > 0) {
                 stringBuilder.append(buffer, 0, length);
             }
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
+                    log.warn(e.getMessage(), e);
                 }
             }
         }
@@ -151,8 +158,8 @@ public class FileUtils {
     /**
      * 拷贝文件到目录
      *
-     * @param from
-     * @param directory
+     * @param from      源文件
+     * @param directory 目标文件夹
      */
     public static void copyFileToDirectory(File from, String directory) throws IOException {
         Files.copy(from, new File(directory + File.separator + from.getName()));
@@ -161,26 +168,25 @@ public class FileUtils {
     /**
      * 获取文件， 可以指定文件后缀，如果不是则返回null
      *
-     * @param filePath
-     * @param fileEndsWith
-     * @return
+     * @param filePath     文件路径
+     * @param fileEndsWith 文件后缀名
+     * @return 文件
      */
     public static File getFile(String filePath, String... fileEndsWith) {
         File result = new File(filePath);
-        if(!result.exists()) {
+        if (!result.exists()) {
             return null;
         }
         //文件名小写
         String fileNameLower = result.getName().toLowerCase();
-        for(String endsWith : fileEndsWith) {
+        for (String endsWith : fileEndsWith) {
             //匹配
-            if(fileNameLower.endsWith(endsWith.toLowerCase())) {
+            if (fileNameLower.endsWith(endsWith.toLowerCase())) {
                 return result;
             }
         }
         return null;
     }
-
 
     public static File selectFile(List<File> files, String endsWith) {
         if (files == null || files.isEmpty()) {

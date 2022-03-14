@@ -1,22 +1,7 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.common;
 
 /**
- * Create by xuyh at 2020/4/20 10:55.
+ * @author xuyh
  */
 public class Constants {
     /**
@@ -43,13 +28,13 @@ public class Constants {
      * </pre>
      */
     public static String PRESSURE_TASK_DIR = EngineConfigurations
-            .getProperty("pressure.task.dir", "/home/opt/flpt/pressure-task");
+        .getProperty("pressure.task.dir", "/home/opt/flpt/pressure-task");
 
     /**
      * 日志目录
      */
     public static String PRESSURE_LOG_DIR = EngineConfigurations
-            .getProperty("pressure.log.dir", "/home/opt/flpt/pressure-task");
+        .getProperty("pressure.log.dir", "/home/opt/flpt/pressure-task");
     /**
      * 压测引擎目录
      * <pre>
@@ -57,7 +42,7 @@ public class Constants {
      * </pre>
      */
     public static String PRESSURE_ENGINE_INSTALL_DIR = EngineConfigurations
-            .getProperty("pressure.engine.install.dir", "/home/opt/flpt/pressure-engine");
+        .getProperty("pressure.engine.install.dir", "/home/opt/flpt/pressure-engine");
 
     /**
      * 没有获取配置信息中的tro交互地址，取这个本地配置地址

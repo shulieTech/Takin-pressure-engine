@@ -1,40 +1,28 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Create by xuyh at 2020/4/20 21:54.
+ * @author xuyh
  */
+@Slf4j
 public class TryUtils {
-    private static Logger logger = LoggerFactory.getLogger(TryUtils.class);
-
     public static <T> T tryOperation(Operation<T> operation) {
         T result = null;
         try {
             result = operation.operate();
         } catch (Exception e) {
-            //do nothing
+            // 忽略异常
         }
         return result;
     }
 
     public interface Operation<T> {
+        /**
+         * 要做的操作
+         *
+         * @return 操作结果
+         */
         T operate();
     }
 
@@ -44,7 +32,7 @@ public class TryUtils {
                 runnable.run();
                 break;
             } catch (Exception e) {
-                logger.warn(e.getMessage(), e);
+                log.warn(e.getMessage(), e);
             }
         }
     }

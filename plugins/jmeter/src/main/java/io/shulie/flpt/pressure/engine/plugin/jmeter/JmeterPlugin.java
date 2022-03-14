@@ -1,123 +1,103 @@
-/*
- * Copyright 2021 Shulie Technology, Co.Ltd
- * Email: shulie@shulie.io
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
+
+import java.io.File;
+import java.util.Map;
+import java.util.List;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.io.ByteArrayInputStream;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import com.google.gson.internal.LinkedTreeMap;
-import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
-import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
-import io.shulie.flpt.pressure.engine.api.entity.BusinessActivityConfig;
-import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
-import io.shulie.flpt.pressure.engine.api.entity.EnginePtlLogConfig;
-import io.shulie.flpt.pressure.engine.api.enums.EngineType;
-import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
-import io.shulie.flpt.pressure.engine.api.plugin.PressurePlugin;
-import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
-import io.shulie.flpt.pressure.engine.common.Constants;
-import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
-import io.shulie.flpt.pressure.engine.plugin.jmeter.script.ScriptModifier;
-import io.shulie.flpt.pressure.engine.plugin.jmeter.util.DomUtils;
-import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
-import io.shulie.flpt.pressure.engine.util.*;
-import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
+import lombok.extern.slf4j.Slf4j;
+
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.gson.internal.LinkedTreeMap;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import io.shulie.flpt.pressure.engine.util.*;
+import io.shulie.flpt.pressure.engine.common.Constants;
+import io.shulie.flpt.pressure.engine.api.enums.EngineType;
+import io.shulie.flpt.pressure.engine.api.plugin.PressurePlugin;
+import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.DomUtils;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePtlLogConfig;
+import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
+import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.script.ScriptModifier;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
+import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
+import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
+import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
 
 /**
- * Create by xuyh at 2020/4/19 23:05.
+ * JMeter插件
+ *
+ * @author xuyh
  */
-@SuppressWarnings("all")
+@Slf4j
 public class JmeterPlugin implements PressurePlugin {
-
-    private static Logger logger = LoggerFactory.getLogger(JmeterPlugin.class);
     private String finalJmxFilePathName;
     private Process jmeterProcess;
 
     /**
      * 之后废弃
      *
-     * @return
+     * @return -
      */
     @Deprecated
     private static String[] metricArgsProcess(PressureContext context, String[] argsRaw) {
         List<String> argsList = new ArrayList<>();
-        for (String arg : argsRaw) {
-            argsList.add(arg);
-        }
-//        Map<String, Object> params = context.getTaskParams();
-        String backend_listener_scene_id_Value = String.valueOf(context.getSceneId());
-        String backend_listener_report_id_Value = String.valueOf(context.getReportId());
+        Collections.addAll(argsList, argsRaw);
+        String backendListenerSceneIdValue = String.valueOf(context.getSceneId());
+        String backendListenerReportIdValue = String.valueOf(context.getReportId());
         // 新增 客户id 一定有
-        String backend_listener_customer_id_Value = String.valueOf(context.getCustomerId());
-        Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
-//        Map<String, Object> businessMap = TryUtils.tryOperation(() -> (Map<String, Object>)params.get("businessMap"));
-        if (backend_listener_scene_id_Value != null && !backend_listener_scene_id_Value.equals("null")) {
-            argsList.add("-Dbackend_listener_scene_id=" + backend_listener_scene_id_Value);
+        String backendListenerCustomerIdValue = String.valueOf(context.getCustomerId());
+        if (!"null".equals(backendListenerSceneIdValue)) {
+            argsList.add("-D\"backend_listener_scene_id\"=" + backendListenerSceneIdValue);
         }
-        if (backend_listener_report_id_Value != null && !backend_listener_report_id_Value.equals("null")) {
-            argsList.add("-Dbackend_listener_report_id=" + backend_listener_report_id_Value);
+        if (!"null".equals(backendListenerReportIdValue)) {
+            argsList.add("-D\"backend_listener_report_id\"=" + backendListenerReportIdValue);
         }
         // todo 回传
-        if (backend_listener_customer_id_Value != null && !backend_listener_customer_id_Value.equals("null")) {
-            argsList.add("-Dbackend_listener_customer_id=" + backend_listener_customer_id_Value);
+        if (!"null".equals(backendListenerCustomerIdValue)) {
+            argsList.add("-D\"backend_listener_customer_id\"=" + backendListenerCustomerIdValue);
         }
         EnginePressureConfig pressureConfig = context.getPressureConfig();
         EnginePtlLogConfig ptlLogConfig = pressureConfig.getPtlLogConfig();
         if (null != ptlLogConfig) {
-            if (null != ptlLogConfig.getPtlUploadFrom()){
-                argsList.add("-Dptl.ptlUploadFrom=" + ptlLogConfig.getPtlUploadFrom());
+            if (null != ptlLogConfig.getPtlUploadFrom()) {
+                argsList.add("-D\"ptl.ptlUploadFrom\"=" + ptlLogConfig.getPtlUploadFrom());
             }
             if (null != ptlLogConfig.getPtlFileEnable()) {
-                argsList.add("-Dptl.ptlFileEnable=" + ptlLogConfig.getPtlFileEnable());
+                argsList.add("-D\"ptl.ptlFileEnable\"=" + ptlLogConfig.getPtlFileEnable());
             }
             if (null != ptlLogConfig.getPtlFileErrorOnly()) {
-                argsList.add("-Dptl.ptlFileErrorOnly=" + ptlLogConfig.getPtlFileErrorOnly());
+                argsList.add("-D\"ptl.ptlFileErrorOnly\"=" + ptlLogConfig.getPtlFileErrorOnly());
             }
             if (null != ptlLogConfig.getPtlFileTimeoutOnly()) {
-                argsList.add("-Dptl.ptlFileTimeoutOnly=" + ptlLogConfig.getPtlFileTimeoutOnly());
+                argsList.add("-D\"ptl.ptlFileTimeoutOnly\"=" + ptlLogConfig.getPtlFileTimeoutOnly());
             }
             if (null != ptlLogConfig.getTimeoutThreshold()) {
-                argsList.add("-Dptl.timeoutThreshold=" + ptlLogConfig.getTimeoutThreshold());
+                argsList.add("-D\"ptl.timeoutThreshold\"=" + ptlLogConfig.getTimeoutThreshold());
             }
             if (null != ptlLogConfig.getLogCutOff()) {
-                argsList.add("-Dptl.logCutOff=" + ptlLogConfig.getLogCutOff());
+                argsList.add("-D\"ptl.logCutOff\"=" + ptlLogConfig.getLogCutOff());
             }
         }
         //设置上传队列大小
-        argsList.add("-DlogQueueSize=" + pressureConfig.getLogQueueSize());
-        argsList.add("-DzkServers=" + pressureConfig.getZkServers());
-        argsList.add("-DengineRedisAddress=" + pressureConfig.getEngineRedisAddress());
-        argsList.add("-DengineRedisPort=" + pressureConfig.getEngineRedisPort());
-        argsList.add("-DengineRedisSentinelNodes=" + pressureConfig.getEngineRedisSentinelNodes());
-        argsList.add("-DengineRedisSentinelMaster=" + pressureConfig.getEngineRedisSentinelMaster());
-        argsList.add("-DengineRedisPassword=" + pressureConfig.getEngineRedisPassword());
-
+        argsList.add("-D\"logQueueSize\"=" + pressureConfig.getLogQueueSize());
+        argsList.add("-D\"zkServers\"=" + pressureConfig.getZkServers());
+        argsList.add("-D\"engineRedisAddress\"=" + pressureConfig.getEngineRedisAddress());
+        argsList.add("-D\"engineRedisPort\"=" + pressureConfig.getEngineRedisPort());
+        argsList.add("-D\"engineRedisSentinelNodes\"=" + pressureConfig.getEngineRedisSentinelNodes());
+        argsList.add("-D\"engineRedisSentinelMaster\"=" + pressureConfig.getEngineRedisSentinelMaster());
+        argsList.add("-D\"engineRedisPassword\"=" + pressureConfig.getEngineRedisPassword());
 
         String[] args = new String[argsList.size()];
         for (int i = 0; i < argsList.size(); i++) {
@@ -134,7 +114,7 @@ public class JmeterPlugin implements PressurePlugin {
     /**
      * 初始化压力引擎压力模式能力
      *
-     * @return
+     * @return -
      */
     @Override
     public EnginePressureModeAbility initialEnginePressureModeAbility() {
@@ -152,23 +132,21 @@ public class JmeterPlugin implements PressurePlugin {
         cmd.append(binDir).append("/shutdown.sh");
         AtomicReference<String> msg = new AtomicReference<>("");
         int exitValue = ProcessUtils.stop(
-                cmd.toString(), binDir, 10L,
-                process -> System.out.println(""),
-                message -> {
-                    logger.info(message);
-                    msg.set(message);
-                }
+            cmd.toString(), binDir, 10L, null,
+            message -> {
+                log.info(message);
+                msg.set(message);
+            }
         );
-        logger.info("Jmeter interrupt finished, exit value: {}", exitValue);
+        log.info("Jmeter interrupt finished, exit value: {}", exitValue);
         return StopResponse.build(exitValue, msg.get());
     }
 
     /**
      * 初始化引擎插件  比如支持dubbo或者kafka的插件
      *
-     * @param context
-     * @return
-     * @author lipeng
+     * @param context 压测上下文
+     * @author 李鹏
      */
     @Override
     public void initializeEnginePlugins(PressureContext context) {
@@ -177,26 +155,24 @@ public class JmeterPlugin implements PressurePlugin {
 
         //目录未设置说明不需要额外插件
         if (enginePluginsFilePath == null || enginePluginsFilePath.size() == 0) {
-            logger.warn("no extra engine plugins loaded !");
+            log.warn("no extra engine plugins loaded !");
             return;
         }
 
         //将插件复制jmeter插件目录
-        enginePluginsFilePath.forEach(item -> JmeterPluginUtil.copyPluginsToJmeter(item));
-
+        enginePluginsFilePath.forEach(JmeterPluginUtil::copyPluginsToJmeter);
     }
 
     /**
      * 修改压测脚本
      *
-     * @param context {@link PressureContext}
+     * @param context                        {@link PressureContext}
      * @param supportedPressureModeAbilities 支持的压力模式
      * @return true: 准备成功 false: 失败，停止进程
      */
-    @SuppressWarnings("unchecked")
     @Override
     public boolean doModifyScript(PressureContext context
-            , SupportedPressureModeAbilities supportedPressureModeAbilities) {
+        , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //  获取数据 组装header
         Long sceneId = context.getSceneId();
         Long reportId = context.getReportId();
@@ -211,44 +187,43 @@ public class JmeterPlugin implements PressurePlugin {
         try {
             document = reader.read(new ByteArrayInputStream(jmxFileContent.getBytes()));
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
         //最终脚本文件
         finalJmxFilePathName = context.getResourcesDir() + File.separator + "final" + File.separator + "test.jmx";
         if (document == null) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "No jmx file found");
             FileUtils.writeTextFile(jmxFileContent, finalJmxFilePathName);
-            logger.error("找不到jmx文件,或者文件内容为空：file="+context.getScriptFile().getAbsolutePath());
+            log.error("找不到jmx文件,或者文件内容为空：file=" + context.getScriptFile().getAbsolutePath());
             System.exit(-100);
         }
 
         //修改脚本
         boolean modifySuccess = ScriptModifier.modifyDocument(document, context, supportedPressureModeAbilities);
         if (!modifySuccess) {
-            logger.error("jmx文件内容不符合预期，请检测jmx文件内容");
+            log.error("jmx文件内容不符合预期，请检测jmx文件内容");
             System.exit(-101);
         }
-
-        // xpath 实现 HTTP信息头管理器 插入 或者 header add 流量染色
-        //ScriptModifier.headerManagerModify(document, sceneId + "", reportId + "", customerId + "");
-
-        //modify start by lipeng  使用dom4j修改jmx文件  将sceneId,reportId,customerId写入头
-        //这里之前的实现是在下面保存文件后 使用jmeter源码的工具类，原来的实现是将xml转为java对象，所以对对象有强依赖
-        //而我们这里可能需要集成第三方插件，比如dubbo，这些依赖包我们是直接集成到jmeter中的而非这个项目
-        //如果使用上面的实现需要将对应的插件包引入此项目，那么就可能出现比如多个dubbo版本的jar包冲突问题，
-        //这里改用dom4j去解析node节点，根据节点名（字符串）的形式找到对应的节点去更改sceneId,reportId,customerId即可。
-        // 2021/03/26 mark by lipeng
-        // 这里用dom修改 不做保存文件操作，之前那种读取文件修改后再保存会将文件中的比如shell脚本中的脚本进行压缩
-        // 压缩成一行代码 这里如果出现单行注释的情况就会把本来多行未注释的代码也一并注释 造成问题
-        // 所以这里改为只修改document 不写入文件，之后修改完再写入文件即可保留shell脚本中的代码格式。
-        // mark end
+        // modify start
+        /* by 李鹏  使用dom4j修改jmx文件  将sceneId,reportId,customerId写入头
+        这里之前的实现是在下面保存文件后 使用jmeter源码的工具类，原来的实现是将xml转为java对象，所以对对象有强依赖
+        而我们这里可能需要集成第三方插件，比如dubbo，这些依赖包我们是直接集成到jmeter中的而非这个项目
+        如果使用上面的实现需要将对应的插件包引入此项目，那么就可能出现比如多个dubbo版本的jar包冲突问题，
+        这里改用dom4j去解析node节点，根据节点名（字符串）的形式找到对应的节点去更改sceneId,reportId,customerId即可。
+        */
+        /*
+         2021/03/26 mark by 李鹏
+         这里用dom修改 不做保存文件操作，之前那种读取文件修改后再保存会将文件中的比如shell脚本中的脚本进行压缩
+         压缩成一行代码 这里如果出现单行注释的情况就会把本来多行未注释的代码也一并注释 造成问题
+         所以这里改为只修改document 不写入文件，之后修改完再写入文件即可保留shell脚本中的代码格式。
+         */
         DomUtils.headerManagerModify(document, sceneId + "", reportId + "", customerId + "");
-        //modify end
+        // modify end
 
         //写入最终文件
         String finalStr = JmeterPluginUtil.writeToFinalFile(document, finalJmxFilePathName);
 
-        // add by lipeng  将上传的额外文件复制到resourceDir  处理压测上传接口
+        // add by 李鹏  将上传的额外文件复制到resourceDir  处理压测上传接口
         String extraUploadFilePath = Constants.ENGINE_NFS_MOUNTED_PATH + File.separator
             + sceneId + File.separator + "attachments";
         File extraUploadFileFolder = new File(extraUploadFilePath);
@@ -259,19 +234,19 @@ public class JmeterPlugin implements PressurePlugin {
                     FileUtils.copyFileToDirectory(extraFile, finalJmxFolder);
                 }
             } catch (IOException e) {
-                logger.warn("拷贝额外上传文件失败。", e);
+                log.warn("拷贝额外上传文件失败。", e);
             }
         }
         // add end
 
         //将最终的jmx文件写入共享目录
         try {
-            logger.info("final jmx file content:"+finalStr);
+            log.info("final jmx file content:" + finalStr);
             String saveFinalJmxPath = context.getLogDir() + File.separator + "test-" + (StringUtils.isNotBlank(
                 context.getPodNumber()) ? "-" + context.getPodNumber() : System.currentTimeMillis()) + ".jmx";
             FileUtils.writeTextFile(finalStr, saveFinalJmxPath);
         } catch (Exception e) {
-            logger.error("组装的jmx文件写入共享目录失败", e);
+            log.error("组装的jmx文件写入共享目录失败", e);
         }
         return true;
     }
@@ -280,7 +255,7 @@ public class JmeterPlugin implements PressurePlugin {
     public void doPressureTest(PressureContext context) {
         // 参数执行 日志目录指定 jmeter占用端口指定
         String jmeterLogFilePath = context.getLogDir() + File.separator + "jmeter-" + System.currentTimeMillis()
-                + ".log";
+            + ".log";
         String portRule = "-Jbeanshell.server.port=" + JmeterPluginUtil.availablePortAcquire(10200);
         //打印jtl日志
         String ptlPath = context.getPtlDir() + File.separator + "pressure-" + (StringUtils.isNotBlank(context.getPodNumber())
@@ -289,37 +264,41 @@ public class JmeterPlugin implements PressurePlugin {
         String sceneId = context.getSceneId() + "";
         String reportId = context.getReportId() + "";
         String customerId = context.getCustomerId() + "";
-        //podnum
+        //pod number
         String podNum = context.getPodCount() == 1 ? "1" : context.getPodNumber();
         //采样率 默认1 全部
         Integer traceSampling = context.getTraceSampling();
 
-        logger.info(" >>>>> 当前场景ID为[{}], 任务ID[{}], 采样率为[{}]", sceneId, reportId, traceSampling);
-        String[] args = new String[] { "-Duser.timezone=Asia/Shanghai", "-Djava.net.preferIPv4Stack=true"
-            , "-Djava.net.preferIPv4Addresses=true"
-            , "-Dengine.perssure.mode=" + context.getPressureScene().getCode()
-            ,"-Dpod.number=" + podNum, "-DSceneId=" + sceneId, "-DReportId=" + reportId
-            , "-DCustomerId=" + customerId, "-DCallbackUrl=" + context.getCloudCallbackUrl()
-            , "-DSamplingInterval=" + traceSampling};
-        String[] jmeterParam = new String[]{"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
-                , "-j", jmeterLogFilePath, portRule};
+        log.info(" >>>>> 当前场景ID为[{}], 任务ID[{}], 采样率为[{}]", sceneId, reportId, traceSampling);
+        String[] args = new String[] {
+            "-D\"user.timezone\"=Asia/Shanghai",
+            "-D\"java.net.preferIPv4Stack\"=true",
+            "-D\"java.net.preferIPv4Addresses\"=true",
+            "-D\"engine.pressure.mode\"=" + context.getPressureScene().getCode(),
+            "-D\"pod.number\"=" + podNum,
+            "-D\"SceneId\"=" + sceneId,
+            "-D\"ReportId\"=" + reportId,
+            "-D\"CustomerId\"=" + customerId,
+            "-D\"CallbackUrl\"=" + context.getCloudCallbackUrl(),
+            "-D\"SamplingInterval\"=" + traceSampling};
+        String[] jmeterParam = new String[] {"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
+            , "-j", jmeterLogFilePath, portRule};
         //组装后端监听器参数
         args = metricArgsProcess(context, args);
         String startMode = context.getStartMode();
-        if (startMode != null && startMode.equalsIgnoreCase("single")) {
-            startInCurrentProcess(context, args ,jmeterParam);
+        if ("single".equalsIgnoreCase(startMode)) {
+            startInCurrentProcess(context, args, jmeterParam);
         } else {
-            Boolean jmeterDebug = TryUtils.tryOperation(() -> System.getProperty("jmeter.debug") == null ? false
-                    : Boolean.parseBoolean(System.getProperty("jmeter.debug")));
+            Boolean jmeterDebug = TryUtils.tryOperation(() -> Boolean.parseBoolean(System.getProperty("jmeter.debug")));
             startNewJmeterProcess(context, jmeterDebug, args, jmeterParam);
         }
     }
 
-    private void startInCurrentProcess(PressureContext context, String[] args,String[] jmeterParam) {
+    private void startInCurrentProcess(PressureContext context, String[] args, String[] jmeterParam) {
         JmeterRunner.run(context, args);
     }
 
-    private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args,String[] jmeterParam) {
+    private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args, String[] jmeterParam) {
         Integer duration = context.getDuration();
         Long timeout = null;
         if (null != duration) {
@@ -327,7 +306,7 @@ public class JmeterPlugin implements PressurePlugin {
         }
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
         StringBuilder cmd = new StringBuilder();
-        cmd.append("java");//jmeter
+        cmd.append("java");
         if (jmeterDebug) {
             cmd.append(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=6005");
         }
@@ -340,12 +319,12 @@ public class JmeterPlugin implements PressurePlugin {
             cmd.append(arg);
         }
         cmd.append(" -jar ApacheJMeter.jar");
-        for (String arg : jmeterParam){
+        for (String arg : jmeterParam) {
             cmd.append(" ");
             cmd.append(arg);
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutdown hook proceed, shutdown.");
+            log.info("Shutdown hook proceed, shutdown.");
             if (jmeterProcess != null && jmeterProcess.isAlive()) {
                 TryUtils.retry(() -> {
                     jmeterProcess.destroyForcibly();
@@ -356,17 +335,18 @@ public class JmeterPlugin implements PressurePlugin {
                 }, 3);
             }
         }));
-        logger.info("cmd:");
-        logger.info(cmd.toString());
+        log.info("cmd:");
+        log.info(cmd.toString());
+        if (timeout != null) {timeout += 10;}
         int exitValue = ProcessUtils.run(
-                cmd.toString(), binDir, timeout + 10,
-                process -> jmeterProcess = process,
-                message -> logger.info(message)
+            cmd.toString(), binDir, timeout,
+            process -> jmeterProcess = process,
+            log::info
         );
         //TODO 这里如果exitValue不为0，有可能是timeout超时了，
         // 但是由于是非正常关闭，jmeter逻辑没有通知takin-cloud结束通知，所以这里需要通知一下takin-cloud结束了
-        // mark by lipeng
-        logger.info("Jmeter run finished, exit value: {}", exitValue);
+        // mark by 李鹏
+        log.info("Jmeter run finished, exit value: {}", exitValue);
         TryUtils.retry(() -> {
             jmeterProcess.destroyForcibly();
             sleep(3_000);
@@ -380,14 +360,14 @@ public class JmeterPlugin implements PressurePlugin {
         try {
             TimeUnit.MILLISECONDS.sleep(timeMillis);
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 
     /**
      * 解析压测数据
      *
-     * @param pressureData
+     * @param pressureData 压测数据
      */
     @Override
     public void doResolvePressureData(PressureContext context, List<Map<String, Object>> pressureData) {
@@ -397,10 +377,12 @@ public class JmeterPlugin implements PressurePlugin {
         if (StringUtils.isNotBlank(podNum)) {
             podIndex = Integer.parseInt(podNum);
         }
-        logger.info("当前POD序号为 >>> [{}]", podIndex);
-        //csv参数
-        //多个文件，获取当前pod需要读取的文件名及文件de开始结束位置
-        //处理csv逻辑分片
+        log.info("当前POD序号为 >>> [{}]", podIndex);
+        /*
+        csv参数
+        多个文件，获取当前pod需要读取的文件名及文件de开始结束位置
+        处理csv逻辑分片
+         */
         if (pressureData != null) {
             //多个文件，获取当前pod需要读取的文件名及文件de开始结束位置
             JSONObject variablesJson = new JSONObject();
@@ -410,18 +392,13 @@ public class JmeterPlugin implements PressurePlugin {
                 if (obj != null) {
                     Map<Integer, Object> pairMap = (Map<Integer, Object>)obj;
                     Object o = pairMap.get(podIndex - 1);
-                    logger.info("获取到文件读取位置信息：{}",o.toString());
+                    log.info("获取到文件读取位置信息：{}", o.toString());
                     if (o instanceof JSONArray) {
                         JSONArray jsonArray = (JSONArray)o;
-                        if (!jsonArray.isEmpty()){
+                        if (!jsonArray.isEmpty()) {
                             JSONObject position = jsonArray.getJSONObject(0);
-                            variablesJson.put(fileName,position.toJSONString());
+                            variablesJson.put(fileName, position.toJSONString());
                         }
-                        //ArrayList<Map<String, String>> positionList = (ArrayList<Map<String, String>>)o;
-                        //if (!positionList.isEmpty()) {
-                        //    Map<String, String> positionMap = positionList.get(0);
-                        //    variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
-                        //}
                     }
                     //兼容之前的分片数据
                     else if (o instanceof Map) {

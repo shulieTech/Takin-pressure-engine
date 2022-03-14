@@ -2,39 +2,48 @@ package io.shulie.flpt.pressure.engine.api.enums;
 
 import lombok.Getter;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 线程组类型
- * @Author: liyuanba
- * @Date: 2021/11/1 2:02 下午
+ *
+ * @author liyuanba
  */
 public enum ThreadGroupTypeEnum {
+    /**
+     * 并发模式
+     */
     CONCURRENCY(0, "并发模式"),
-
+    /**
+     * TPS模式
+     */
     TPS(1, "TPS模式"),
-
+    /**
+     * 自定义模式
+     */
     CUSTOMIZE(2, "自定义模式"),
     ;
     @Getter
-    private int code;
+    private final int code;
     @Getter
-    private String description;
+    private final String description;
+
     ThreadGroupTypeEnum(int code, String description) {
         this.code = code;
         this.description = description;
     }
-    private static final Map<Integer, ThreadGroupTypeEnum> pool = new HashMap<>();
+
+    private static final Map<Integer, ThreadGroupTypeEnum> POOL = new HashMap<>();
+
     static {
         for (ThreadGroupTypeEnum e : ThreadGroupTypeEnum.values()) {
-            pool.put(e.getCode(), e);
+            POOL.put(e.getCode(), e);
         }
     }
+
     public static ThreadGroupTypeEnum value(Integer code) {
-        if (null == code) {
-            return null;
-        }
-        return pool.get(code);
+        if (null == code) {return null;}
+        return POOL.get(code);
     }
 }

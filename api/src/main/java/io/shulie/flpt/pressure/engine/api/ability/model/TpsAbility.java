@@ -4,13 +4,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 引擎并发模式能力
+ * TPS模式能力
  *
- * @author 李鹏
+ * @author lipeng
  */
 @Getter
 @Setter
-public class ConcurrencyAbility extends BaseAbility<ConcurrencyAbility> {
+public class TpsAbility extends BaseAbility<TpsAbility> {
 
     /**
      * 递增时长
@@ -28,16 +28,16 @@ public class ConcurrencyAbility extends BaseAbility<ConcurrencyAbility> {
     private Long holdTime;
 
     /**
-     * 期望并发数
+     * 目标tps
      */
-    private Long expectThroughput;
+    private String targetTps;
 
-    public ConcurrencyAbility(String abilityName) {
+    public TpsAbility(String abilityName) {
         super(abilityName);
     }
 
-    public static ConcurrencyAbility build(String abilityName) {
-        return new ConcurrencyAbility(abilityName);
+    public static TpsAbility build(String abilityName) {
+        return new TpsAbility(abilityName);
     }
 
 }
