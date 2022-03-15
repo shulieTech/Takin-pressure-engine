@@ -1217,6 +1217,8 @@ public class ScriptModifier {
             steps = 0;
             rampUp = 0;
         }
+        // 修正持续时间 (总压测时长 - 递增时长)
+        holdTime -= rampUp;
         threadGroupElement.setName(JmeterConstants.CONCURRENCY_THREAD_GROUP_NAME);
         threadGroupElement.addAttribute("guiclass", "com.blazemeter.jmeter.threads.concurrency.ConcurrencyThreadGroupGui");
         threadGroupElement.addAttribute("testclass", JmeterConstants.CONCURRENCY_THREAD_GROUP_NAME);
@@ -1265,7 +1267,8 @@ public class ScriptModifier {
             steps = 0;
             rampUp = 0;
         }
-
+        // 修正持续时间 (总压测时长 - 递增时长)
+        holdTime -= rampUp;
         threadGroupElement.setName(JmeterConstants.TPS_THREAD_GROUP_NAME);
         threadGroupElement.addAttribute("guiclass", "com.blazemeter.jmeter.threads.arrivals.ArrivalsThreadGroupGui");
         threadGroupElement.addAttribute("testclass", JmeterConstants.TPS_THREAD_GROUP_NAME);
@@ -1339,6 +1342,8 @@ public class ScriptModifier {
             steps = 0;
             rampUp = 0;
         }
+        // 修正持续时间 (总压测时长 - 递增时长)
+        holdTime -= rampUp;
         if (tpsTargetLevel > 0) {
             steps = (int)Math.ceil(threadNum / tpsTargetLevel);
             rampUp = (int)Math.floor(steps * 1.2);
