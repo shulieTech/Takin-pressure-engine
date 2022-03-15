@@ -337,7 +337,11 @@ public class JmeterPlugin implements PressurePlugin {
         }));
         log.info("cmd:");
         log.info(cmd.toString());
-        if (timeout != null) {timeout += 10;}
+        // 关闭引擎对于JMeter运行时的超时检测
+        {
+            //if (timeout != null) {timeout += 10;}
+            timeout = -1L;
+        }
         int exitValue = ProcessUtils.run(
             cmd.toString(), binDir, timeout,
             process -> jmeterProcess = process,
