@@ -2,7 +2,7 @@
 
 # 工作目录
 DIRNAME=$(dirname "$0")
-WORKDIR=$(cd "$DIRNAME" || exit; pwd)
+WORKDIR=$(cd "$DIRNAME"/../.. || exit; pwd)
 # 压测引擎项目源码路径
 PRESSURE_ENGINE_SOURCE_PATH=$WORKDIR
 # 压测引擎Jmeter目录
@@ -11,7 +11,7 @@ PRESSURE_ENGINE_JMETER="$PRESSURE_ENGINE_SOURCE_PATH"/pressure-engine-jmeter/
 JMETER_SOURCE_PATH="$PRESSURE_ENGINE_SOURCE_PATH"/../takin-jmeter
 
 log() {
-    echo -e "\033[40;37m$1\033[0m"
+    echo -e "\033[40;37m$DATE $1\033[0m"
 }
 
 log ' >>> 校验目录 <<< '
