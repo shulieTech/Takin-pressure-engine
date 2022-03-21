@@ -49,7 +49,7 @@ cp          "$WORK_DIR"/build/target/pressure-engine.tar.gz "$BUILD_DIR"
 tar   -zxf  "$BUILD_DIR"/pressure-engine.tar.gz -C "$BUILD_DIR"/
 echo " >>> 预生成DockerFile <<<"
 # 创建临时目录
-TEMP_FILE=$(mktemp -qt Dockerfile)
+TEMP_FILE=$(mktemp -qt Dockerfile.XXXX)
 TEMP_FILE="${WORK_DIR}/build/${TEMP_FILE##*/}"
 echo "临时文件${TEMP_FILE}"
 # 写入FROM
