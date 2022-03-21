@@ -1,23 +1,23 @@
 # Takin-pressure-engine
 
-# 构建制品
+## 构建
 
-## 构建tar包
+1. [基础包](./build/cmd/basic.sh)
 
-```sh ./buildTar.sh```
+    ```sh ./build/cmd/basic.sh```
 
-<strong>脚本配置项:JMETER_SOURCE_PATH<strong>
+2. [tar包](./build/cmd/tar.sh)
 
-## 构建docker镜像
+    ```sh ./build/cmd/tar.sh```
 
-```sh ./buildImage.sh```
+3. [docker镜像](./build/cmd/image.sh)
 
-<strong>脚本配置项:DOCKER_NAME<strong>
+    ```sh ./build/cmd/image.sh```
 
-# start.sh 使用方式
+## start.sh 使用方式
 
-## 本地开发调试
-```
+### 本地开发调试
+```shell
 // 先修改配置文件
 pressure-engine.properties
 // 打包
@@ -30,16 +30,18 @@ cd build/target/pressure-engine/pressure-engine/bin
 ```
 ### 解释说明
 
-#### 启动配置参数 启动配置指定了压测引擎启动的参数，压测模式，指标上传地址等配置项
+#### 启动配置参数
+
+启动配置指定了压测引擎启动的参数，压测模式，指标上传地址等配置项
 
 ```
--t 压测引擎类型  "jmeter"
--c 压测配置文件路径  
--f 前台启动 y
--d true  或者 -d 后面加一个数
+-t "jmeter" 			# 压测引擎类型
+-c xxx/xxx.jmx   	# 压测配置文件路径
+-f y							# 前台启动
+-d true  					# 或者 -d 后面加一个数
 ```
 #### run.json 内容
-```
+```json
 {
     "scriptPath": "/test/3/resources/test.jmx",
     "fileSets":
@@ -72,26 +74,9 @@ cd build/target/pressure-engine/pressure-engine/bin
     "rampUp": 0
 }
 ```
-## 打包过程
-
-  构建脚本一键构建：
-  
-    0. 修改buildTarImage.sh中参数
-        JMETER_SOURCE_PATH             本地Jmeter源码根目录路径
-        GRADLE_HOME                    本地Gradle安装目录，如果是idea自带gradle，可以在idea配置中查看路径
-        MAVEN_SETTINGS_PATH            本地Maven配置文件位置
-        PRESSURE_ENGINE_SOURCE_PATH    本地压测引擎项目源码根目录路径
-
-    1. 执行脚本
-        ./buildTarImage.sh
-
-    2. 在用户目录下 develop/buildImages/pressure-engine文件夹下
-        可以获得pressure-engine.tar.gz引擎包
-
 ## 插件开发
-```
-插件实现均需要在plugins目录下
-插件需要实现PressurePlugin和EnginePressureModeAbility接口
-```
+> 插件实现均需要在plugins目录下
+> 插件需要实现PressurePlugin和EnginePressureModeAbility接口
+
 API架构设计图如下：
 <img src="https://raw.githubusercontent.com/shulieTech/Images/main/pressure_engine_api_struct.png" />
