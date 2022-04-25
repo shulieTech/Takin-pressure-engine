@@ -79,6 +79,7 @@ public class Bootstrap {
         do {
             configurations = TryUtils.tryOperation(
                 () -> FileUtils.readTextFileContent(new File(configurationsFile)));
+            logger.info("file:{}; config:{}", configurationsFile, configurations);
             isEmpty = StringUtils.isBlank(configurations) || (StringUtils.isNotBlank(configurations)
                 && JSON.parseObject(configurations).isEmpty());
             logger.info("Parsing the configuration file, The content of the current configuration file is {}",
@@ -155,7 +156,8 @@ public class Bootstrap {
 
         if (pressurePluginTemp == null) {
             logger.warn("未找到匹配类型的压力插件: {}", engineType);
-            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, String.format("未找到匹配类型的压力插件: %s", engineType));
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
+                String.format("未找到匹配类型的压力插件: %s", engineType));
             System.exit(-1);
         }
 
@@ -165,7 +167,8 @@ public class Bootstrap {
         //添加中断监听 modify by 李鹏
         //用于检测cloud是否进行了中断操作
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(THREAD_NAME_FORMAT).build();
-        ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(SCHEDULED_THREAD_CORE_SIZE, threadFactory);
+        ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(SCHEDULED_THREAD_CORE_SIZE,
+            threadFactory);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
             String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT);
             logger.info("获取中断状态：{}", result);
@@ -175,11 +178,13 @@ public class Bootstrap {
                 StopResponse response = pressurePlugin.stopPressureTest(context);
                 if (response != null) {
                     if (response.getExitValue() > -1) {
-                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED, response.getMessage());
+                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED,
+                            response.getMessage());
                         //销毁线程池
                         scheduledExecutorService.shutdown();
                     } else {
-                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_FAILED, response.getMessage());
+                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_FAILED,
+                            response.getMessage());
                     }
                 }
             }
@@ -209,7 +214,9 @@ public class Bootstrap {
         //支持的压力模式
         EnginePressureModeAbility enginePressureModeAbility = pressurePlugin.initialEnginePressureModeAbility();
         if (enginePressureModeAbility == null) {
-            logger.error("unsupported any pressure mode, are u sure to implement PressurePlugin#initialEnginePressureModeAbility ?");
+            logger.error(
+                "unsupported any pressure mode, are u sure to implement "
+                    + "PressurePlugin#initialEnginePressureModeAbility ?");
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "没有支持任何压力模式，启动失败");
             System.exit(-1);
         }
