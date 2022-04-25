@@ -31,6 +31,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import com.alibaba.fastjson.JSON;
+
 /**
  * 启动类
  *
@@ -72,13 +74,23 @@ public class Bootstrap {
 
     public static void main(String[] args) {
         String configurationsFile = System.getProperty("configurations");
-        String configurations = TryUtils.tryOperation(
-            () -> FileUtils.readTextFileContent(new File(configurationsFile)));
-
-        if (configurations == null || configurations.isEmpty()) {
-            logger.warn("No configuration found in config file: {}", configurationsFile);
-            System.exit(-1);
-        }
+        boolean isEmpty = false;
+        String configurations = org.apache.commons.lang3.StringUtils.EMPTY;
+        do {
+            configurations = TryUtils.tryOperation(
+                () -> FileUtils.readTextFileContent(new File(configurationsFile)));
+            isEmpty = StringUtils.isBlank(configurations) || (StringUtils.isNotBlank(configurations)
+                && JSON.parseObject(configurations).isEmpty());
+            logger.info("Parsing the configuration file, The content of the current configuration file is {}",
+                isEmpty ? "empty. The engine is waiting start. " : configurations);
+            if (isEmpty) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } while (isEmpty);
         EngineRunConfig config = JsonUtils.parseObject(configurations, EngineRunConfig.class);
         // 初始化公共方法
         HttpNotifyTakinCloudUtils.init(config);
