@@ -79,11 +79,11 @@ public class Bootstrap {
         do {
             configurations = TryUtils.tryOperation(
                 () -> FileUtils.readTextFileContent(new File(configurationsFile)));
-            logger.info("file:{}; config:{}", configurationsFile, configurations);
             isEmpty = StringUtils.isBlank(configurations) || (StringUtils.isNotBlank(configurations)
                 && JSON.parseObject(configurations).isEmpty());
-            logger.info("Parsing the configuration file, The content of the current configuration file is {}",
-                isEmpty ? "empty. The engine is waiting start. " : configurations);
+            System.out.println(
+                String.format("Parsing the configuration file, The content of the current configuration file is %s",
+                    isEmpty ? "empty. The engine is waiting start. " : configurations));
             if (isEmpty) {
                 try {
                     Thread.sleep(500);
