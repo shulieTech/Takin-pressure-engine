@@ -7,12 +7,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.io.ByteArrayInputStream;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import org.dom4j.Document;
@@ -42,6 +47,27 @@ import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities
  */
 @Slf4j
 public class JmeterPlugin implements PressurePlugin {
+
+    /**
+     * 调度默认延时时间 单位秒
+     */
+    private static final int SCHEDULED_INITIAL_DELAY = 5;
+
+    /**
+     * 调度默认周期时间 单位秒
+     */
+    private static final int SCHEDULED_PERIOD = 1;
+
+    /**
+     * 调度默认核心线程数 单位秒
+     */
+    private static final int SCHEDULED_THREAD_CORE_SIZE = 1;
+
+    /**
+     * 线程名格式化格式
+     */
+    private static final String THREAD_NAME_FORMAT = "thread-call-runner-%d";
+
     private String finalJmxFilePathName;
     private Process jmeterProcess;
 
@@ -342,6 +368,22 @@ public class JmeterPlugin implements PressurePlugin {
             //if (timeout != null) {timeout += 10;}
             timeout = -1L;
         }
+        //回调通知准备就绪
+        HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.READIED);
+        do{
+            String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.PRESSURE);
+            log.info("获取压测状态：{}", result);
+            JsonObject jsonObject = GsonUtils.json2Obj(result, JsonObject.class);
+            if (jsonObject != null && jsonObject.get("data").getAsBoolean()) {
+                log.info("启动压测");
+                break;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }while (true);
         int exitValue = ProcessUtils.run(
             cmd.toString(), binDir, timeout,
             process -> jmeterProcess = process,

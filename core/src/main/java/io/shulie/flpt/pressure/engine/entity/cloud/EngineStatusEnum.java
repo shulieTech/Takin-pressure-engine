@@ -10,6 +10,10 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum EngineStatusEnum {
     /**
+     * 准备就绪
+     */
+    READIED("准备就绪", "readied"),
+    /**
      * 启动成功
      */
     STARTED("启动成功", "started"),
@@ -17,6 +21,10 @@ public enum EngineStatusEnum {
      * 启动失败
      */
     START_FAILED("启动失败", "startFail"),
+    /**
+     * 开始压测
+     */
+    PRESSURE("开始压测","pressure"),
     /**
      * 中断
      */
