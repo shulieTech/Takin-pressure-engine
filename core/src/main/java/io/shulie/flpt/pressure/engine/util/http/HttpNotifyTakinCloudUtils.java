@@ -43,8 +43,10 @@ public class HttpNotifyTakinCloudUtils {
     }
 
     public static String getTakinCloud(EngineStatusEnum statusEnum) {
+        String podNumber = System.getProperty("pod.number");
         return HttpUtils.doPost(url,
             GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
+                .podNum(podNumber == null ? "" : podNumber)
                 .status(statusEnum.getStatus()).build()));
     }
 
