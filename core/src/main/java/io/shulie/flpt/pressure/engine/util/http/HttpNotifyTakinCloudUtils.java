@@ -24,7 +24,7 @@ public class HttpNotifyTakinCloudUtils {
     private static final String PRESSURE_ENGINE_EXCEPTION_PREFIX = "【压测引擎】";
 
     private static String url;
-    private static Long sceneId;
+    private static String resourceId;
     private static Long reportId;
     private static Long customerId;
 
@@ -36,7 +36,7 @@ public class HttpNotifyTakinCloudUtils {
      */
     public static void notifyTakinCloud(EngineStatusEnum statusEnum, String errMsg) {
         String podNumber = System.getProperty("pod.number");
-        HttpUtils.doPost(url, GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
+        HttpUtils.doPost(url, GsonUtils.obj2Json(EngineNotifyParam.build(resourceId, reportId, customerId)
             .podNum(podNumber == null ? "" : podNumber)
             .status(
                 statusEnum.getStatus()).msg(PRESSURE_ENGINE_EXCEPTION_PREFIX + errMsg).build()));
@@ -45,7 +45,7 @@ public class HttpNotifyTakinCloudUtils {
     public static String getTakinCloud(EngineStatusEnum statusEnum) {
         String podNumber = System.getProperty("pod.number");
         return HttpUtils.doPost(url,
-            GsonUtils.obj2Json(EngineNotifyParam.build(sceneId, reportId, customerId)
+            GsonUtils.obj2Json(EngineNotifyParam.build(resourceId, reportId, customerId)
                 .podNum(podNumber == null ? "" : podNumber)
                 .status(statusEnum.getStatus()).build()));
     }
@@ -58,15 +58,15 @@ public class HttpNotifyTakinCloudUtils {
     public static void init(EngineRunConfig config) {
         if (Objects.nonNull(config)) {
             url = config.getCallbackUrl();
-            sceneId = config.getSceneId();
+            resourceId = config.getResourceId();
             reportId = config.getTaskId();
             customerId = config.getCustomerId();
         } else {
             url = Constants.TAKIN_TRO_URL;
-            sceneId = 0L;
+            resourceId = "";
             reportId = 0L;
             customerId = 0L;
         }
-        log.info("接口路径:{}\n场景主键:{}\n报告主键:{}\n租户主键\n{}", url, sceneId, reportId, customerId);
+        log.info("接口路径:{}\n资源主键:{}\n报告主键:{}\n租户主键\n{}", url, resourceId, reportId, customerId);
     }
 }

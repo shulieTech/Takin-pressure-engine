@@ -16,7 +16,7 @@ public class EngineNotifyParam {
     /**
      * 场景ID
      */
-    private Long sceneId;
+    private String resourceId;
 
     /**
      * 客户Id 新增
@@ -45,13 +45,14 @@ public class EngineNotifyParam {
     /**
      * create Builder method
      **/
-    public static EngineNotifyParam.Builder build(Long sceneId, Long resultId, Long customerId) {
-        return new Builder(sceneId, resultId, customerId);
+    public static EngineNotifyParam.Builder build(String resourceId, Long resultId, Long customerId) {
+        return new Builder(resourceId, resultId, customerId);
     }
 
-    public EngineNotifyParam(Long resultId, Long sceneId, Long customerId, String status, String msg, Long time, String podNum) {
+    public EngineNotifyParam(Long resultId, String resourceId, Long customerId, String status, String msg, Long time,
+        String podNum) {
         this.resultId = resultId;
-        this.sceneId = sceneId;
+        this.resourceId = resourceId;
         this.customerId = customerId;
         this.status = status;
         this.msg = msg;
@@ -61,15 +62,15 @@ public class EngineNotifyParam {
 
     public static class Builder {
         private final Long resultId;
-        private final Long sceneId;
+        private final String resourceId;
         private final Long customerId;
         private String status;
         private String msg;
         private Long time;
         private String podNum;
 
-        Builder(Long sceneId, Long resultId, Long customerId) {
-            this.sceneId = sceneId;
+        Builder(String resourceId, Long resultId, Long customerId) {
+            this.resourceId = resourceId;
             this.resultId = resultId;
             this.customerId = customerId;
         }
@@ -95,7 +96,7 @@ public class EngineNotifyParam {
         }
 
         public EngineNotifyParam build() {
-            return new EngineNotifyParam(resultId, sceneId, customerId, status, msg, time, podNum);
+            return new EngineNotifyParam(resultId, resourceId, customerId, status, msg, time, podNum);
         }
     }
 
