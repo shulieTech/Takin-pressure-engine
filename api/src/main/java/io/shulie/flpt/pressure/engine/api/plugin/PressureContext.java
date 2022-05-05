@@ -20,7 +20,7 @@ public class PressureContext extends AbstractEntry {
     /**
      * 场景id
      */
-    private Long sceneId;
+    private String sceneId;
     /**
      * 报告id
      */

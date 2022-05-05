@@ -318,10 +318,10 @@ public class Bootstrap {
      * @param config 引擎运行配置
      */
     private static void initialPressureContext(EngineRunConfig config) {
-        Long sceneId = config.getSceneId();
-        if (null == sceneId || 0 == sceneId) {
+        String resourceId = config.getResourceId();
+        if (StringUtils.isBlank(resourceId)) {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "无效的场景id参数");
-            logger.error("无效的sceneId.[{}]", sceneId);
+            logger.error("无效的resourceId.[{}]", resourceId);
             System.exit(-1);
         }
         Long reportId = config.getTaskId();
@@ -351,7 +351,7 @@ public class Bootstrap {
         Long customerId = config.getCustomerId();
 
         context = new PressureContext();
-        context.setSceneId(sceneId);
+        context.setSceneId(resourceId);
         context.setReportId(reportId);
         context.setCustomerId(customerId);
         context.setMemSetting(config.getMemSetting());
@@ -369,11 +369,11 @@ public class Bootstrap {
         }
         //logs
         String logPath = logDir + "logs";
-        logPath = logPath + File.separator + sceneId + File.separator + reportId;
+        logPath = logPath + File.separator + resourceId + File.separator + reportId;
         System.setProperty(Constants.TASK_LOG_DIR_KEY, logPath);
         // ptl
         String ptlPath = logDir + "ptl";
-        ptlPath = ptlPath + File.separator + sceneId + File.separator + reportId;
+        ptlPath = ptlPath + File.separator + resourceId + File.separator + reportId;
         System.setProperty(Constants.TASK_JTL_DIR_KEY, ptlPath);
 
         context.setTaskDir(taskDir);
@@ -433,7 +433,7 @@ public class Bootstrap {
         //初始化全局参数
         // 组装GlobalUserVariables
         GlobalUserVariables globalUserVariables = new GlobalUserVariables();
-        globalUserVariables.setSceneId(sceneId + "");
+        globalUserVariables.setSceneId(resourceId + "");
         globalUserVariables.setReportId(reportId + "");
         globalUserVariables.setCustomerId(customerId + "");
         globalUserVariables.setTakinCloudCallbackUrl(takinCloudCallbackUrl);

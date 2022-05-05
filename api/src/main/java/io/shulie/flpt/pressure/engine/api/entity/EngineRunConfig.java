@@ -12,7 +12,7 @@ import java.util.Map;
  */
 @Data
 public class EngineRunConfig extends AbstractEntry {
-    private Long sceneId;
+    private String resourceId;
     private Long taskId;
     private Long customerId;
     /**

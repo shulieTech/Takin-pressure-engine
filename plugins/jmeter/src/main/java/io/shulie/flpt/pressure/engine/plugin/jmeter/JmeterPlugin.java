@@ -200,7 +200,7 @@ public class JmeterPlugin implements PressurePlugin {
     public boolean doModifyScript(PressureContext context
         , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //  获取数据 组装header
-        Long sceneId = context.getSceneId();
+        String sceneId = context.getSceneId();
         Long reportId = context.getReportId();
         Long customerId = context.getCustomerId();
 
