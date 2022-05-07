@@ -393,6 +393,8 @@ public class JmeterPlugin implements PressurePlugin {
         // 但是由于是非正常关闭，jmeter逻辑没有通知takin-cloud结束通知，所以这里需要通知一下takin-cloud结束了
         // mark by 李鹏
         log.info("Jmeter run finished, exit value: {}", exitValue);
+        //通知完成
+        HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED);
         TryUtils.retry(() -> {
             jmeterProcess.destroyForcibly();
             sleep(3_000);
