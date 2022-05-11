@@ -306,6 +306,8 @@ public class JmeterPlugin implements PressurePlugin {
             "-D\"ReportId\"=" + reportId,
             "-D\"CustomerId\"=" + customerId,
             "-D\"CallbackUrl\"=" + context.getCloudCallbackUrl(),
+            "-D\"dynamicTaskTpsUrl\"=" + context.getDynamicTaskTpsUrl(),
+            "-D\"csvPositionUrl\"=" + context.getCsvPositionUrl(),
             "-D\"SamplingInterval\"=" + traceSampling};
         String[] jmeterParam = new String[] {"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
             , "-j", jmeterLogFilePath, portRule};

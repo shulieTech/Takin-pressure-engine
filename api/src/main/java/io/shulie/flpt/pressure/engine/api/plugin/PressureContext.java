@@ -128,6 +128,14 @@ public class PressureContext extends AbstractEntry {
      */
     private String cloudCallbackUrl;
     /**
+     * 动态TPS地址
+     */
+    private String dynamicTaskTpsUrl;
+    /**
+     * 动态TPS地址
+     */
+    private String csvPositionUrl;
+    /**
      * jar文件地址
      */
     private List<String> jarFilePathList;

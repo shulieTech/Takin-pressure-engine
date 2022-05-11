@@ -24,6 +24,14 @@ public class EngineRunConfig extends AbstractEntry {
      */
     private String callbackUrl;
     /**
+     * 动态tps地址
+     */
+    private String callDynamicTpsUrl;
+    /**
+     * csv文件位置回调地址
+     */
+    private String csvPositionUrl;
+    /**
      * 启动的pod数量
      */
     private Integer podCount;

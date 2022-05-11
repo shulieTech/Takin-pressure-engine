@@ -429,6 +429,10 @@ public class Bootstrap {
         context.setTraceSampling(traceSampling);
         //cloud回调地址
         context.setCloudCallbackUrl(takinCloudCallbackUrl);
+        //动态tps
+        context.setDynamicTaskTpsUrl(config.getCallDynamicTpsUrl());
+        //csv position
+        context.setCsvPositionUrl(config.getCsvPositionUrl());
 
         //初始化全局参数
         // 组装GlobalUserVariables
