@@ -61,6 +61,7 @@ public class ExceptionUtil {
                 setMethod(methodName);
                 setMsg(finalExceptionMsg);
             }};
+            break;
         }
         log.info("new exception info: {}", JSON.toJSONString(info));
         return info;

@@ -230,7 +230,6 @@ public class JmeterPlugin implements PressurePlugin {
             modifySuccess = ScriptModifier.modifyDocument(document, context, supportedPressureModeAbilities);
         } catch (Exception e) {
             ExceptionUtil.ExceptionInfo info = ExceptionUtil.resolvingException(e);
-
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, info.getMsg());
         } finally {
             if (!modifySuccess) {
