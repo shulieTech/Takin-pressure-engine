@@ -16,9 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonObject;
-import io.shulie.flpt.pressure.engine.api.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import org.dom4j.Document;

@@ -1,4 +1,4 @@
-package io.shulie.flpt.pressure.engine.api.util;
+package io.shulie.flpt.pressure.engine.util;
 
 import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
 import lombok.Data;

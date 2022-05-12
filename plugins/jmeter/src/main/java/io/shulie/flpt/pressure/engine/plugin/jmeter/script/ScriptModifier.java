@@ -2,7 +2,6 @@ package io.shulie.flpt.pressure.engine.plugin.jmeter.script;
 
 import com.alibaba.fastjson.JSON;
 import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
-import io.shulie.flpt.pressure.engine.api.util.ExceptionUtil;
 import org.dom4j.*;
 
 import java.util.*;
