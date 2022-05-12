@@ -1,7 +1,9 @@
 package io.shulie.flpt.pressure.engine.plugin.jmeter.util;
 
+import com.alibaba.fastjson.JSON;
 import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -14,6 +16,7 @@ import java.util.Objects;
  * Datetime:    2022/5/12   11:53
  * Author:   chenhongqiao@shulie.com
  */
+@Slf4j
 public class ExceptionUtil {
 
     @Data
@@ -25,6 +28,12 @@ public class ExceptionUtil {
     }
 
     public static ExceptionInfo resolvingException(Exception e) {
+        ExceptionInfo info = new ExceptionInfo() {{
+            setClazz(e.getStackTrace()[0].getClassName());
+            setLine(e.getStackTrace()[0].getLineNumber());
+            setMethod(e.getStackTrace()[0].getMethodName());
+            setMsg(e.getMessage());
+        }};
         for (StackTraceElement element : e.getStackTrace()) {
             int line = element.getLineNumber();
             String className = element.getClassName();
@@ -46,19 +55,15 @@ public class ExceptionUtil {
             }
 
             String finalExceptionMsg = exceptionMsg;
-            return new ExceptionInfo() {{
+            info = new ExceptionInfo() {{
                 setClazz(className);
                 setLine(line);
                 setMethod(methodName);
                 setMsg(finalExceptionMsg);
             }};
         }
-        return new ExceptionInfo() {{
-            setClazz(e.getStackTrace()[0].getClassName());
-            setLine(e.getStackTrace()[0].getLineNumber());
-            setMethod(e.getStackTrace()[0].getMethodName());
-            setMsg(e.getMessage());
-        }};
+        log.info("new exception info: {}", JSON.toJSONString(info));
+        return info;
     }
 
 }
