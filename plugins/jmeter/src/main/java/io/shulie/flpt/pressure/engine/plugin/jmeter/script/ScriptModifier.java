@@ -1,5 +1,8 @@
 package io.shulie.flpt.pressure.engine.plugin.jmeter.script;
 
+import com.alibaba.fastjson.JSON;
+import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
+import io.shulie.flpt.pressure.engine.api.util.ExceptionUtil;
 import org.dom4j.*;
 
 import java.util.*;
@@ -70,6 +73,7 @@ public class ScriptModifier {
      * @param context                        压测上下文
      * @param supportedPressureModeAbilities 支持压测模式的能力
      */
+    @EngineException("修改脚本异常")
     public static boolean modifyDocument(Document document, PressureContext context
         , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //场景id string
@@ -136,12 +140,17 @@ public class ScriptModifier {
         //testPlan的hashTree，与testPlan平级
         Element testPlanContainer = hashTree2Elements.get(0);
         // HTTP信息头管理器 第二层以上包括第二层的xml中
-        // 添加线程组
-        threadGroupModify(testPlanContainer, context, supportedPressureModeAbilities);
-
-        // 添加 Local file
-        csvPathModify(csvConfigs, testPlanContainer, context.getPodCount());
-
+        try {
+            // 添加线程组
+            threadGroupModify(testPlanContainer, context, supportedPressureModeAbilities);
+            // 添加 Local file
+            csvPathModify(csvConfigs, testPlanContainer, context.getPodCount());
+        } catch (Exception e) {
+            ExceptionUtil.ExceptionInfo info = ExceptionUtil.resolvingException(e);
+            log.error(JSON.toJSONString(info));
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, info.getMsg());
+            return false;
+        }
         //后端监听器
         addBackEndListener(testPlanContainer, sceneIdString, reportIdString, customerIdString, context);
 
@@ -234,6 +243,7 @@ public class ScriptModifier {
      * @param threadGroupElement 线程组
      * @param context            参数
      */
+    @EngineException(value = "添加常量吞吐量定时器异常")
     public static void addConstantsThroughputControl(Element threadGroupElement, PressureContext context, EnginePressureConfig config, int threadNum) {
         Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
         if (null == businessMap) {
@@ -352,6 +362,7 @@ public class ScriptModifier {
     /**
      * 添加常量吞吐量控制器
      */
+    @EngineException(value = "添加常量吞吐量控制器异常")
     public static boolean addConstantsThroughputControl(List<Element> elements, PressureContext context, double factor) {
         if (CollectionUtils.isEmpty(elements)) {
             return false;
@@ -406,6 +417,7 @@ public class ScriptModifier {
      * @param throughputPercent 吞吐量百分比
      * @param tpsFactor         吞吐量浮动因子
      */
+    @EngineException(value = "给采样器添加常量吞吐量定时器异常")
     public static void addEachConstantsThroughputControl(Element samplerElement, Double throughput, Double throughputPercent, Double tpsFactor) {
         // 1. 校验采样器是否存在
         if (samplerElement == null) {
@@ -584,6 +596,7 @@ public class ScriptModifier {
         return ele;
     }
 
+    @EngineException(value = "添加断言异常")
     private static void addBeanShellAssertion(Element element) {
         Element beanShellAssertion = element.addElement("BeanShellAssertion");
         beanShellAssertion.addAttribute("guiclass", "BeanShellAssertionGui");
@@ -623,6 +636,7 @@ public class ScriptModifier {
      * @param element   节点
      * @param delayTime 延时时间
      */
+    @EngineException("添加流量控制器异常")
     private static void addFlowControllerAction(Element element, Object delayTime) {
         Element flowControllerAction = element.addElement("TestAction");
         flowControllerAction.addAttribute("guiclass", "TestActionGui");
@@ -723,6 +737,7 @@ public class ScriptModifier {
      * @param threadGroupElement 线程组
      * @param context            参数信息
      */
+    @EngineException(value = "添加吞吐量控制器异常")
     public static void addThroughputControl(Element threadGroupElement, PressureContext context) {
         Map<String, BusinessActivityConfig> businessMap = context.getBusinessMap();
         if (null == businessMap) {
@@ -762,6 +777,7 @@ public class ScriptModifier {
      * @param samplerElement sampleElement是传来的采样器，一般是HTTPSamplerProxy 或者 dubbo kafka之类的。
      * @param percent        吞吐量百分比
      */
+    @EngineException(value = "添加吞吐量控制器异常")
     public static void addEachThroughputControl(Element samplerElement, String percent) {
         // 1. 校验采样器是否存在
         if (samplerElement == null) {
@@ -819,6 +835,7 @@ public class ScriptModifier {
             .collect(Collectors.joining(","));
     }
 
+    @EngineException(value = "修改脚本csv文件路径异常")
     private static void csvPathModify(List<Map<String, Object>> csvConfigs, Element parent, int podCount) {
         if (CollectionUtils.isEmpty(csvConfigs)) {
             return;
@@ -832,6 +849,7 @@ public class ScriptModifier {
         }
     }
 
+    @EngineException(value = "替换csv文件路径异常")
     private static void replaceCsvPath(Element currentElement, List<Map<String, Object>> csvConfigs, int podCount) {
         String csvFileName = null;
         List<Element> csvPropertyElements = currentElement.elements("stringProp");
@@ -1128,6 +1146,7 @@ public class ScriptModifier {
     /**
      * 线程组修改
      */
+    @EngineException(value = "修改线程组异常")
     private static void threadGroupModify(Element threadGroupContainer, PressureContext context
         , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //压力模式
@@ -1168,6 +1187,7 @@ public class ScriptModifier {
     /**
      * 常规：修改线程组
      */
+    @EngineException(value = "常规模式修改线程组异常")
     private static void modifyDefaultThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config) {
         //没有配置信息的节点不处理
         if (null == config) {
@@ -1204,6 +1224,7 @@ public class ScriptModifier {
     /**
      * 并发模式
      */
+    @EngineException(value = "并发模式修改线程组异常")
     private static void modifyConcurrencyThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
         int targetLevel = CommonUtil.getValue(1, tgConfig, ThreadGroupConfig::getThreadNum);
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
@@ -1236,6 +1257,7 @@ public class ScriptModifier {
     /**
      * tps：修改线程组
      */
+    @EngineException(value = "TPS模式修改线程组异常")
     private static void modifyDefaultTpsThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
         int tpsThreadMode = CommonUtil.getValue(0, config, EnginePressureConfig::getTpsThreadMode);
         //老板tps模式实现
@@ -1254,6 +1276,7 @@ public class ScriptModifier {
     /**
      * 老的tps模式实现
      */
+    @EngineException(value = "修改默认线程组异常")
     private static void modifyDefaultTps1ThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
         double tpsTargetLevel = CommonUtil.getValue(0d, config, EnginePressureConfig::getTpsTargetLevel);
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
@@ -1329,6 +1352,7 @@ public class ScriptModifier {
     /**
      * 新的tps模式实现
      */
+    @EngineException(value = "修改默认线程组异常")
     private static void modifyDefaultTps0ThreadGroup(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig, int threadNum) {
         double tpsTargetLevel = CommonUtil.getValue(0d, config, EnginePressureConfig::getTpsTargetLevel);
         PressureTestModeEnum mode = PressureTestModeEnum.value(tgConfig.getMode());
@@ -1365,6 +1389,7 @@ public class ScriptModifier {
     /**
      * 试跑：修改线程组
      */
+    @EngineException(value = "脚本试跑模式修改线程组异常")
     private static void modifyTryRunThreadGroup(Element threadGroupElement, SupportedPressureModeAbilities supportedPressureModeAbilities) {
         TryRunAbility tryRunAbility = supportedPressureModeAbilities.getPressureModeAbility(PressureSceneEnum.TRY_RUN);
         //具备脚本调试能力
@@ -1392,6 +1417,7 @@ public class ScriptModifier {
     /**
      * 巡检：修改线程组
      */
+    @EngineException(value = "巡检模式修改线程组异常")
     private static void modifyInspectionThreadGroup(Element threadGroupElement, EnginePressureConfig config, SupportedPressureModeAbilities supportedPressureModeAbilities) {
         InspectionAbility inspectionAbility = supportedPressureModeAbilities.getPressureModeAbility(PressureSceneEnum.INSPECTION_MODE);
         //具备巡检能力
@@ -1429,6 +1455,7 @@ public class ScriptModifier {
     /**
      * 流量调试：修改线程组
      */
+    @EngineException(value = "流量调试模式修改线程组异常")
     private static void modifyFlowDebugThreadGroup(Element threadGroupElement, SupportedPressureModeAbilities supportedPressureModeAbilities) {
         FlowDebugAbility flowDebugAbility = supportedPressureModeAbilities.getPressureModeAbility(PressureSceneEnum.FLOW_DEBUG);
         //具备流量调试能力
@@ -1456,6 +1483,7 @@ public class ScriptModifier {
      *
      * @param threadGroupElement 线程组节点
      */
+    @EngineException(value = "填充试跑模式线程组异常, 参数[loops、expectThroughput]不能为空")
     private static void rebuildTryRunModeThreadGroupSubElements(Element threadGroupElement,
         Long loops, Long expectThroughput) {
         threadGroupElement.addElement("stringProp")
@@ -1517,6 +1545,7 @@ public class ScriptModifier {
      *
      * @param threadGroupElement 线程组节点
      */
+    @EngineException(value = "填充巡检模式线程组异常")
     private static void rebuildInspectionModeThreadGroupSubElements(Element threadGroupElement,
         Long loops) {
         threadGroupElement.addElement("stringProp")
@@ -1549,6 +1578,7 @@ public class ScriptModifier {
      * @param threadGroupElement 线程组节点
      * @param loops              次数
      */
+    @EngineException(value = "填充流量调试模式线程组异常")
     private static void rebuildFlowDebugThreadGroupSubElements(Element threadGroupElement, Long loops) {
         threadGroupElement.addElement("stringProp")
             .addAttribute("name", "ThreadGroup.on_sample_error")
