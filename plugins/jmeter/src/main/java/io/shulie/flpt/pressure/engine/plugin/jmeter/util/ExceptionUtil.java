@@ -51,7 +51,7 @@ public class ExceptionUtil {
                 if (Objects.isNull(annotation)) {
                     continue;
                 }
-                exceptionMsg = String.format("%s:[%s:%s]", annotation.value(), e.getClass().toString(), e.getMessage());
+                exceptionMsg = String.format("%s:[%s:%s]", annotation.value(), e.getClass().getName(), e.getMessage());
             }
 
             String finalExceptionMsg = exceptionMsg;
