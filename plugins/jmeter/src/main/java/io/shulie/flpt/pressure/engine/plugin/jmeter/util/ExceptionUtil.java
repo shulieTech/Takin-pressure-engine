@@ -4,6 +4,7 @@ import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
 import lombok.Data;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -30,8 +31,9 @@ public class ExceptionUtil {
             String methodName = element.getMethodName();
             Method method = null;
             try {
-                method = Class.forName(className).getMethod(methodName);
-            } catch (ClassNotFoundException | NoSuchMethodException ex) {
+                Method[] methods = Class.forName(className).getMethods();
+                method = Arrays.stream(methods).filter(m -> Objects.equals(methodName, m.getName())).findFirst().get();
+            } catch (ClassNotFoundException ex) {
                 ex.printStackTrace();
             }
             String exceptionMsg = "发生未识别的异常";
