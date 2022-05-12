@@ -40,9 +40,9 @@ public class ExceptionUtil {
             String methodName = element.getMethodName();
             Method method = null;
             try {
-                Method[] methods = Class.forName(className).getMethods();
+                Method[] methods = Class.forName(className).getDeclaredMethods();
                 method = Arrays.stream(methods).filter(m -> Objects.equals(methodName, m.getName())).findFirst().get();
-            } catch (ClassNotFoundException ex) {
+            } catch (Exception ex) {
                 ex.printStackTrace();
             }
             String exceptionMsg = "发生未识别的异常";
