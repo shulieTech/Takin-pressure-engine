@@ -36,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.collections4.CollectionUtils;
 
+import static io.shulie.flpt.pressure.engine.common.Constants.ENGINE_NFS_MOUNTED_PATH;
+
 /**
  * @author xuyh
  */
@@ -1819,6 +1821,29 @@ public class ScriptModifier {
         stringProp133.addAttribute("name", "Argument.metadata");
         stringProp133.setText("=");
         /* businessMap */
+
+        /* metricsFile */
+        Element elementProp14 = collectionProp.addElement("elementProp");
+        elementProp14.addAttribute("name", "metricsFile");
+        elementProp14.addAttribute("elementType", "Argument");
+
+        Element stringProp141 = elementProp14.addElement("stringProp");
+        stringProp141.addAttribute("name", "Argument.name");
+        stringProp141.setText("metricsFile");
+
+        Element stringProp142 = elementProp14.addElement("stringProp");
+        stringProp142.addAttribute("name", "Argument.value");
+        StringBuilder path = new StringBuilder(ENGINE_NFS_MOUNTED_PATH);
+        path.append("/metrics/")
+                .append(context.getSceneId() + "/")
+                .append(context.getReportId() + "/")
+                .append("pressure-"+context.getPodNumber()+".metrics.err");
+        stringProp142.setText(context.getMemSetting());
+
+        Element stringProp143 = elementProp14.addElement("stringProp");
+        stringProp143.addAttribute("name", "Argument.metadata");
+        stringProp143.setText("=");
+        /* metricsFile */
 
         /* 结束 */
         Element stringProp = backendListener.addElement("stringProp");
