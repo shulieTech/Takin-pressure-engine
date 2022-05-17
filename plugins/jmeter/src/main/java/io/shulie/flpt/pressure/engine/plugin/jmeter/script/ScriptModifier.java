@@ -1838,7 +1838,7 @@ public class ScriptModifier {
                 .append(context.getSceneId() + "/")
                 .append(context.getReportId() + "/")
                 .append("pressure-"+context.getPodNumber()+".metrics.err");
-        stringProp142.setText(context.getMemSetting());
+        stringProp142.setText(path.toString());
 
         Element stringProp143 = elementProp14.addElement("stringProp");
         stringProp143.addAttribute("name", "Argument.metadata");
