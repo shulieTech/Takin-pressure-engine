@@ -862,18 +862,21 @@ public class ScriptModifier {
             }
         }
         Map<String, Object> csvConfig = nameMatch(csvConfigs, csvFileName);
-        if (csvConfig != null) {
-            // 这里的podNum 对应的是序号，存在环境变量中，不部署总数
-            String podNum = System.getProperty("pod.number");
-            Boolean split = TryUtils.tryOperation(() -> Boolean.parseBoolean(String.valueOf(csvConfig.get("split"))));
-            String path = String.valueOf(csvConfig.get("path"));
-            if (path != null) {
-                List<Element> strPropElements = currentElement.elements("stringProp");
-                for (Element strPropElement : strPropElements) {
-                    Attribute attribute = strPropElement.attribute("name");
-                    if (attribute != null && "filename".equalsIgnoreCase(attribute.getValue())) {
-                        strPropElement.setText(path);
-                    }
+        if(Objects.isNull(csvConfig)){
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "未获取到相应的csv文件配置");
+            log.error("fileName:{}, csvConfig is null", csvFileName);
+            return;
+        }
+        // 这里的podNum 对应的是序号，存在环境变量中，不部署总数
+        String podNum = System.getProperty("pod.number");
+        Boolean split = TryUtils.tryOperation(() -> Boolean.parseBoolean(String.valueOf(csvConfig.get("split"))));
+        String path = String.valueOf(csvConfig.get("path"));
+        if (path != null) {
+            List<Element> strPropElements = currentElement.elements("stringProp");
+            for (Element strPropElement : strPropElements) {
+                Attribute attribute = strPropElement.attribute("name");
+                if (attribute != null && "filename".equalsIgnoreCase(attribute.getValue())) {
+                    strPropElement.setText(path);
                 }
             }
         }
