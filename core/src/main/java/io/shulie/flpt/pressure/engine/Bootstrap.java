@@ -178,8 +178,9 @@ public class Bootstrap {
                 StopResponse response = pressurePlugin.stopPressureTest(context);
                 if (response != null) {
                     if (response.getExitValue() > -1) {
-                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED,
-                            response.getMessage());
+                        //这里通知cloud 并不是真正的结束了
+//                        HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED,
+//                            response.getMessage());
                         //销毁线程池
                         scheduledExecutorService.shutdown();
                     } else {
