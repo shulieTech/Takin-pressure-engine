@@ -838,9 +838,6 @@ public class ScriptModifier {
 
     @EngineException(value = "修改脚本csv文件路径异常")
     private static void csvPathModify(List<Map<String, Object>> csvConfigs, Element parent, int podCount) {
-        if (CollectionUtils.isEmpty(csvConfigs)) {
-            return;
-        }
         List<Element> children = parent.elements();
         for (Element child : children) {
             if ("CSVDataSet".equalsIgnoreCase(child.getName())) {
@@ -852,6 +849,10 @@ public class ScriptModifier {
 
     @EngineException(value = "替换csv文件路径异常")
     private static void replaceCsvPath(Element currentElement, List<Map<String, Object>> csvConfigs, int podCount) {
+        if (CollectionUtils.isEmpty(csvConfigs)) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED, "未获取到相应的csv文件配置");
+            return;
+        }
         String csvFileName = null;
         List<Element> csvPropertyElements = currentElement.elements("stringProp");
         for (Element csvPropertyElement : csvPropertyElements) {
