@@ -68,10 +68,10 @@ fi
 LOG_DIR="/home/opt/flpt/pressure-task/logs"
 RES_DIR="/home/opt/flpt/pressure-task/resources"
 if [[ -e ${ENGINE_LOG_DIR} ]]; then
-    echo "${ENGINE_LOG_DIR} exist."
+    echo "engineLog dir ${ENGINE_LOG_DIR} exist."
 else
     mkdir -p ${ENGINE_LOG_DIR}
-    echo "${ENGINE_LOG_DIR} created."
+    echo "engineLog dir ${ENGINE_LOG_DIR} created."
 fi
 if [[ -e ${LOG_DIR} ]]; then
     echo "${LOG_DIR} exist."
