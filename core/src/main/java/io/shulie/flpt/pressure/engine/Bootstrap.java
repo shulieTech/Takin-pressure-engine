@@ -274,6 +274,14 @@ public class Bootstrap {
                 }
             }
         }
+        //  脚本未找到 回传
+        if (!scriptFile.exists()) {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
+                    String.format("No script file found, 请检查配置目录是否正确: %s", testScriptFilePath));
+            logger.warn("No script file found, 请检查配置目录是否正确:{}", testScriptFilePath);
+            System.exit(-1);
+        }
+
         //获取所有jar路径
         List<String> jarFilePathList = new ArrayList<>();
         if (resourceDir != null) {
@@ -299,14 +307,6 @@ public class Bootstrap {
                     }
                 }
             }
-        }
-
-        //  脚本未找到 回传
-        if (!scriptFile.exists()) {
-            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.START_FAILED,
-                "No script file found, 请检查配置目录是否正确");
-            logger.warn("No script file found, 请检查配置目录是否正确");
-            System.exit(-1);
         }
 
         context.setScriptFile(scriptFile);
