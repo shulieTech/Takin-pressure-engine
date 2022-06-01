@@ -155,7 +155,7 @@ public class JmeterPlugin implements PressurePlugin {
         //  sh  /home/opt/flpt/pressure-engine/engines/jmeter/bin/shutdown.sh
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
         StringBuilder cmd = new StringBuilder();
-        cmd.append(binDir).append("/shutdown.sh");
+        cmd.append(binDir).append("/stoptest.sh");
         AtomicReference<String> msg = new AtomicReference<>("");
         int exitValue = ProcessUtils.stop(
                 cmd.toString(), binDir, 10L, null,
