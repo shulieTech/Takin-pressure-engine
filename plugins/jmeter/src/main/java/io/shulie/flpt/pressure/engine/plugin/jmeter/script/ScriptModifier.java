@@ -1650,6 +1650,7 @@ public class ScriptModifier {
         }
     }
 
+    @EngineException("添加后端监听器异常；检测指标上报Url以及上报队列logQueue")
     private static void addBackEndListener(Element element, String sceneId, String reportId,
         String customerId, PressureContext context) {
         Element backendListener = element.addElement("BackendListener");

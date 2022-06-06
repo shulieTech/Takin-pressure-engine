@@ -1,10 +1,15 @@
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
+import io.shulie.flpt.pressure.engine.api.entity.BusinessActivityConfig;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
+import io.shulie.flpt.pressure.engine.api.entity.EnginePtlLogConfig;
+import io.shulie.flpt.pressure.engine.api.entity.ThreadGroupConfig;
+import io.shulie.flpt.pressure.engine.api.enums.PressureSceneEnum;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,38 +18,50 @@ import java.util.Map;
 public class JmeterPluginPrepareTest {
     public static void main(String[] args) {
         PressureContext context = new PressureContext();
-        context.setResourcesDir("/Users/johnson/Downloads/jmeter-scripts");
+        context.setResourcesDir("/Users/phine/Downloads/jmeter-scripts");
         Map<String, Object> taskParam = new HashMap<>();
-        taskParam.put("scriptPath", "/Users/johnson/Downloads/jmeter-scripts/test-plan.jmx");
-        taskParam.put("extJarPath", "");
-        taskParam.put("pressureMode", "fixed");
-        taskParam.put("expectThroughput", 10);
-        taskParam.put("rampUp", 0);
-        taskParam.put("steps", 0);
-        taskParam.put("continuedTime", 10);
-        taskParam.put("consoleUrl", "http://localhost:10010/takin-web/api/collector/receive?scenId=%sreportId=%s");
-        List<Map<String, Object>> fileSets = new ArrayList<>();
+        context.setSceneId("1339");
+        context.setBindByXpathMd5(true);
+        context.setDuration(60);
+        context.setMemSetting("-Xmx2048m -Xms2048m -XX:MaxMetaspaceSize=256m");
+        context.setPressureScene(PressureSceneEnum.DEFAULT);
+        context.setDynamicTaskTpsUrl("http://192.168.1.28:10181/api/config/dynamic/tps/get?taskId=875");
+        context.setPodCount(1);
+        context.setScriptFile(new File("/Users/phine/Downloads/minzhuo123.jmx"));
+        context.setPressureConfig(new EnginePressureConfig() {{
+            setPtlLogConfig(new EnginePtlLogConfig() {{
+                setPtlFileEnable(false);
+                setPtlFileTimeoutOnly(false);
+                setPtlFileErrorOnly(false);
+                setLogCutOff(false);
+            }});
+            setTpsThreadMode(0);
+            setTraceSampling(1);
+            HashMap<String, ThreadGroupConfig> map = new HashMap<>();
+            map.put("7dae7383a28b5c45069b528a454d1164", new ThreadGroupConfig() {{
+                setMode(1);
+                setRampUpUnit("s");
+                setType(0);
+                setThreadNum(1);
+            }});
+            setThreadGroupConfigMap(map);
+        }});
+        context.setMetricCollectorUrl("http://192.168.1.28:10010/takin-cloud/notify/metrics/upload_old?jobId=875");
+        context.setCustomerId(1L);
+        context.setCloudCallbackUrl("http://192.168.1.28:10181/api/resource/notify/state");
+        context.setEnginePluginsFilePath(new ArrayList<>());
+        HashMap<String, BusinessActivityConfig> busHashMap = new HashMap<>();
+        busHashMap.put("ec0446f9165717b8c5da8cd7d030cfca", new BusinessActivityConfig() {{
+            setRt(100);
+            setRate(100.0);
+            setTps(100);
+            setActivityName("ec0446f9165717b8c5da8cd7d030cfca");
+            setBindRef("ec0446f9165717b8c5da8cd7d030cfca");
+        }});
+        context.setBusinessMap(busHashMap);
+        context.setCsvPositionUrl("http://192.168.1.28:10010/takin-cloud/usage/upload/file");
+        context.setReportId(875L);
 
-        Map<String, Object> file1 = new HashMap<>();
-        file1.put("name", "tags.csv");
-        file1.put("split", false);
-        file1.put("path", "/Users/johnson/Downloads/jmeter-scripts/tags.csv");
-        fileSets.add(file1);
-
-        Map<String, Object> file2 = new HashMap<>();
-        file2.put("name", "test1.csv");
-        file2.put("split", false);
-        file2.put("path", "/Users/johnson/Downloads/jmeter-scripts/test1.csv");
-        fileSets.add(file2);
-
-        Map<String, Object> file3 = new HashMap<>();
-        file3.put("name", "test2.csv");
-        file3.put("split", false);
-        file3.put("path", "/Users/johnson/Downloads/jmeter-scripts/test2.csv");
-        fileSets.add(file3);
-
-        taskParam.put("fileSets", fileSets);
-        //        context.setTaskParams(taskParam);
         System.out.println(new JmeterPlugin().doModifyScript(context, null));
     }
 }
