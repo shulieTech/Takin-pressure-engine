@@ -44,6 +44,7 @@ public class ExceptionUtil {
                 method = Arrays.stream(methods).filter(m -> Objects.equals(methodName, m.getName())).findFirst().get();
             } catch (Exception ex) {
                 ex.printStackTrace();
+                continue;
             }
             String exceptionMsg = "发生未识别的异常";
             if (Objects.nonNull(method)) {

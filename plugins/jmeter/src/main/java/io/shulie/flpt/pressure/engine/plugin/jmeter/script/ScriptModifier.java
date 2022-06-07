@@ -840,7 +840,7 @@ public class ScriptModifier {
     private static void csvPathModify(List<Map<String, Object>> csvConfigs, Element parent, int podCount) {
         List<Element> children = parent.elements();
         for (Element child : children) {
-            Attribute enable = child.attribute("enable");
+            Attribute enable = child.attribute("enabled");
             if ("CSVDataSet".equalsIgnoreCase(child.getName()) && Objects.equals(enable.getValue(), "true")) {
                 replaceCsvPath(child, csvConfigs, podCount);
             }

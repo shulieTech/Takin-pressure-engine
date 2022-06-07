@@ -27,7 +27,7 @@ public class JmeterPluginPrepareTest {
         context.setPressureScene(PressureSceneEnum.DEFAULT);
         context.setDynamicTaskTpsUrl("http://192.168.1.28:10181/api/config/dynamic/tps/get?taskId=875");
         context.setPodCount(1);
-        context.setScriptFile(new File("/Users/phine/Downloads/minzhuo123.jmx"));
+        context.setScriptFile(new File("/usr/local/apache-jmeter-5.4.1/jmx/BSP派送通知极效前置放行.jmx"));
         context.setPressureConfig(new EnginePressureConfig() {{
             setPtlLogConfig(new EnginePtlLogConfig() {{
                 setPtlFileEnable(false);
@@ -61,6 +61,7 @@ public class JmeterPluginPrepareTest {
         context.setBusinessMap(busHashMap);
         context.setCsvPositionUrl("http://192.168.1.28:10010/takin-cloud/usage/upload/file");
         context.setReportId(875L);
+        context.setPressureEngineBackendQueueCapacity("5000");
 
         System.out.println(new JmeterPlugin().doModifyScript(context, null));
     }
