@@ -34,6 +34,7 @@ public class ExceptionUtil {
             setMethod(e.getStackTrace()[0].getMethodName());
             setMsg(e.getMessage());
         }};
+        String exceptionMsg = "发生未识别的异常";
         for (StackTraceElement element : e.getStackTrace()) {
             int line = element.getLineNumber();
             String className = element.getClassName();
@@ -46,7 +47,6 @@ public class ExceptionUtil {
                 ex.printStackTrace();
                 continue;
             }
-            String exceptionMsg = "发生未识别的异常";
             if (Objects.nonNull(method)) {
                 EngineException annotation = method.getAnnotation(EngineException.class);
                 if (Objects.isNull(annotation)) {
