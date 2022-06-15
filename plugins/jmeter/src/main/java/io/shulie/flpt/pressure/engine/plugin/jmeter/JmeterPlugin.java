@@ -403,7 +403,11 @@ public class JmeterPlugin implements PressurePlugin {
         // mark by 李鹏
         log.info("Jmeter run finished, exit value: {}", exitValue);
         //通知完成
-        HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED);
+        if(exitValue == 0){
+            HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED);
+        }else {
+            HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_FAILED, "Jmeter非正常关闭,请检查启动参数");
+        }
         TryUtils.retry(() -> {
             jmeterProcess.destroyForcibly();
             sleep(3_000);
