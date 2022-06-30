@@ -72,6 +72,10 @@ public class EngineRunConfig extends AbstractEntry {
      */
     private List<String> enginePluginsFiles;
     /**
+     * 压测引擎附件
+     */
+    private List<String> attachmentsFiles;
+    /**
      * 压测配置信息
      */
     private EnginePressureConfig pressureConfig;

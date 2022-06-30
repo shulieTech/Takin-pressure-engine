@@ -66,6 +66,10 @@ public class PressureContext extends AbstractEntry {
      */
     private List<String> enginePluginsFilePath;
     /**
+     * 压测引擎附件
+     */
+    private List<String> attachmentsFiles;
+    /**
      * 期望目标值
      * <p>并发模式下为并发,tps模式为tps</p>
      */

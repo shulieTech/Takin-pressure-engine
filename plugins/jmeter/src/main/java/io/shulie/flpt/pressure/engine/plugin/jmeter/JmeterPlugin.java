@@ -20,12 +20,12 @@ import com.google.gson.JsonObject;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
 import com.google.gson.internal.LinkedTreeMap;
 
 import io.shulie.flpt.pressure.engine.util.*;
-import io.shulie.flpt.pressure.engine.common.Constants;
 import io.shulie.flpt.pressure.engine.api.enums.EngineType;
 import io.shulie.flpt.pressure.engine.api.plugin.PressurePlugin;
 import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
@@ -256,22 +256,21 @@ public class JmeterPlugin implements PressurePlugin {
         //写入最终文件
         String finalStr = JmeterPluginUtil.writeToFinalFile(document, finalJmxFilePathName);
 
-        // add by 李鹏  将上传的额外文件复制到resourceDir  处理压测上传接口
-        String extraUploadFilePath = Constants.ENGINE_NFS_MOUNTED_PATH + File.separator
-                + sceneId + File.separator + "attachments";
-        File extraUploadFileFolder = new File(extraUploadFilePath);
+        //将上传的额外文件复制到resourceDir  处理压测上传接口
         String finalJmxFolder = context.getResourcesDir() + File.separator + "final" + File.separator;
-        if (extraUploadFileFolder.exists() && extraUploadFileFolder.isDirectory()) {
+        List<String> attachmentsFiles = context.getAttachmentsFiles();
+        if(CollectionUtils.isNotEmpty(attachmentsFiles)){
             try {
-                for (File extraFile : extraUploadFileFolder.listFiles()) {
-                    FileUtils.copyFileToDirectory(extraFile, finalJmxFolder);
+                for (String attachmentsFile : attachmentsFiles) {
+                    File extraFile = new File(attachmentsFile);
+                    if(extraFile.isFile() && extraFile.exists()){
+                        FileUtils.copyFileToDirectory(extraFile, finalJmxFolder);
+                    }
                 }
             } catch (IOException e) {
                 log.warn("拷贝额外上传文件失败。", e);
             }
         }
-        // add end
-
         //将最终的jmx文件写入共享目录
         try {
             log.info("final jmx file content:" + finalStr);

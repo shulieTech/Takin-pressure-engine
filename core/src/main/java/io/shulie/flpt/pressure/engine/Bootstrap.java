@@ -386,6 +386,8 @@ public class Bootstrap {
         context.setScriptPath(config.getScriptFile());
         //获取引擎插件路径
         context.setEnginePluginsFilePath(config.getEnginePluginsFiles());
+        //获取压测引擎附件
+        context.setAttachmentsFiles(config.getAttachmentsFiles());
         context.setOldVersion(BooleanUtils.isFalse(config.getBindByXpathMd5()));
         //引擎压力模式
         Integer pressureScene = config.getPressureScene();
