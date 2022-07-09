@@ -1296,29 +1296,29 @@ public class ScriptModifier {
             if (null != businessMap) {
                 //按tps目标比例计算最大线程数
                 int totalTps = businessMap.values().stream().filter(Objects::nonNull)
-                    .map(BusinessActivityConfig::getTps)
-                    .filter(Objects::nonNull)
-                    .mapToInt(d -> d)
-                    .sum();
-                List<Element> children = DomUtils.findAllChildElement(threadGroupElement);
-                int tps = 1;
-                if (CollectionUtils.isNotEmpty(children)) {
-                    tps = children.stream().filter(Objects::nonNull)
-                        .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
-                        .map(DomUtils::getTransaction)
-                        .filter(StringUtils::isNotBlank)
-                        .map(businessMap::get)
-                        .filter(Objects::nonNull)
                         .map(BusinessActivityConfig::getTps)
                         .filter(Objects::nonNull)
                         .mapToInt(d -> d)
                         .sum();
+                List<Element> children = DomUtils.findAllChildElement(threadGroupElement);
+                int tps = 1;
+                if (CollectionUtils.isNotEmpty(children)) {
+                    tps = children.stream().filter(Objects::nonNull)
+                            .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
+                            .map(DomUtils::getTransaction)
+                            .filter(StringUtils::isNotBlank)
+                            .map(businessMap::get)
+                            .filter(Objects::nonNull)
+                            .map(BusinessActivityConfig::getTps)
+                            .filter(Objects::nonNull)
+                            .mapToInt(d -> d)
+                            .sum();
                 }
                 threadNum = BigDecimal.valueOf(tps)
-                    .divide(BigDecimal.valueOf(totalTps <= 0 ? 1 : totalTps), 10, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(maxThreadNum))
-                    .setScale(0, RoundingMode.CEILING)
-                    .intValue();
+                        .divide(BigDecimal.valueOf(totalTps <= 0 ? 1 : totalTps), 10, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(maxThreadNum))
+                        .setScale(0, RoundingMode.CEILING)
+                        .intValue();
             } else {
                 threadNum = maxThreadNum;
             }
@@ -1373,8 +1373,9 @@ public class ScriptModifier {
                             .sum();
                 }
                 //通过Rt、tps 计算并发数
-                //thread = tps/(1000ms / rt) / pod
-                threadNum = BigDecimal.valueOf(threadGroupTps / (1000l / threadGroupRt) / context.getPodCount()).intValue();
+                //thread = (tps/(1000ms / rt) / pod) + 1
+                threadNum = BigDecimal.valueOf(threadGroupTps / (1000l / threadGroupRt) / context.getPodCount())
+                        .intValue() + 1;//加1 是为了防止threadNum为0
 //                threadNum = BigDecimal.valueOf(threadGroupTps)
 //                        .divide(BigDecimal.valueOf(1000).divide(BigDecimal.valueOf(threadGroupRt)))
 //                        .divide(BigDecimal.valueOf(context.getPodCount()))
