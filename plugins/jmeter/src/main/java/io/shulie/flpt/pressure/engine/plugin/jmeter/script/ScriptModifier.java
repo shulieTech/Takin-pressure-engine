@@ -1374,10 +1374,11 @@ public class ScriptModifier {
                 }
                 //通过Rt、tps 计算并发数
                 //thread = tps/(1000ms / rt) / pod
-                threadNum = BigDecimal.valueOf(threadGroupTps)
-                        .divide(BigDecimal.valueOf(1000).divide(BigDecimal.valueOf(threadGroupRt)))
-                        .divide(BigDecimal.valueOf(context.getPodCount()))
-                        .intValue();
+                threadNum = BigDecimal.valueOf(threadGroupTps / (1000l / threadGroupRt) / context.getPodCount()).intValue();
+//                threadNum = BigDecimal.valueOf(threadGroupTps)
+//                        .divide(BigDecimal.valueOf(1000).divide(BigDecimal.valueOf(threadGroupRt)))
+//                        .divide(BigDecimal.valueOf(context.getPodCount()))
+//                        .intValue();
             }
         }
         return threadNum;
@@ -1403,8 +1404,8 @@ public class ScriptModifier {
         // 修正持续时间 (总压测时长 - 递增时长)
         holdTime -= rampUp;
         if (tpsTargetLevel > 0) {
-            steps = (int) Math.ceil(threadNum / tpsTargetLevel);
-            rampUp = (int) Math.floor(steps * 1.2);
+            steps = (int) Math.ceil(threadNum / tpsTargetLevel) + 1;
+            rampUp = (int) Math.floor(steps * 1.2) + 1;
         }
 
         threadGroupElement.setName(JmeterConstants.TPS_NEW_THREAD_GROUP_NAME);
