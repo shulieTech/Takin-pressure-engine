@@ -80,4 +80,9 @@ public class EngineRunConfig extends AbstractEntry {
      */
     private String memSetting;
 
+    /**
+     * 占位符键值对
+     */
+    private Map<String, String> placeholderMap;
+
 }

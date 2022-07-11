@@ -147,4 +147,9 @@ public class PressureContext extends AbstractEntry {
      * 请求头参数
      */
     private HttpHeaderVariables httpHeaderVariables;
+
+    /**
+     * 占位符键值对
+     */
+    private Map<String, String> placeholderMap;
 }

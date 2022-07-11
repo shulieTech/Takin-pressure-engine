@@ -180,6 +180,9 @@ public class JmeterPlugin implements PressurePlugin {
 
         // 解析jmx
         String jmxFileContent = FileUtils.readTextFileContent(context.getScriptFile());
+
+        //处理文件中的占位符
+        jmxFileContent = dealJmxPlaceholder(jmxFileContent, context.getPlaceholderMap());
         // 处理特殊字符
         jmxFileContent = JmeterPluginUtil.specialCharRepBefore(jmxFileContent);
         SAXReader reader = new SAXReader();
@@ -250,6 +253,17 @@ public class JmeterPlugin implements PressurePlugin {
         }
         return true;
     }
+
+    private String dealJmxPlaceholder(String jmxFileContent, Map<String, String> placeholderMap) {
+        if (jmxFileContent != null && placeholderMap != null && placeholderMap.size() > 0){
+            log.info("获取到占位符，进行替换");
+            for (Map.Entry<String, String> entry : placeholderMap.entrySet()){
+                jmxFileContent = jmxFileContent.replaceAll(entry.getKey(), entry.getValue());
+            }
+        }
+        return jmxFileContent;
+    }
+
 
     @Override
     public void doPressureTest(PressureContext context) {

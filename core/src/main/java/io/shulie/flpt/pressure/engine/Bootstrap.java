@@ -361,6 +361,7 @@ public class Bootstrap {
         context.setLogDir(logPath);
         context.setPtlDir(ptlPath);
         context.setResourcesDir(taskDir + "resources");
+        context.setPlaceholderMap(config.getPlaceholderMap());
 
         //脚本路径
         context.setScriptPath(config.getScriptFile());
