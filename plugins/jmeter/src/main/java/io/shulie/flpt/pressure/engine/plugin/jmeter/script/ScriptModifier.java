@@ -1374,7 +1374,7 @@ public class ScriptModifier {
                 }
                 //通过Rt、tps 计算并发数
                 //thread = (tps/(1000ms / rt) / pod) + 1
-                threadNum = BigDecimal.valueOf(threadGroupTps / (1000l / threadGroupRt) / context.getPodCount())
+                threadNum = BigDecimal.valueOf(threadGroupTps / (1000.0 / threadGroupRt) / context.getPodCount())
                         .intValue() + 1;//加1 是为了防止threadNum为0
 //                threadNum = BigDecimal.valueOf(threadGroupTps)
 //                        .divide(BigDecimal.valueOf(1000).divide(BigDecimal.valueOf(threadGroupRt)))
