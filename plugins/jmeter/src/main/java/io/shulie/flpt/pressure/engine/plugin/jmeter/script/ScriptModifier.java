@@ -1278,7 +1278,7 @@ public class ScriptModifier {
         //将其下方内容清空
         threadGroupElement.clearContent();
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(tpsTargetLevel), rampUp, steps, holdTime);
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf((int)tpsTargetLevel), rampUp, steps, holdTime);
         //添加限制并发数 这里不需要限制
         //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
         DomUtils.addBasePropElement(threadGroupElement, "ConcurrencyLimit", Constants.TPS_MODE_CONCURRENCY_LIMIT);
@@ -1336,7 +1336,6 @@ public class ScriptModifier {
      * @return
      */
     private static int getThreadNumNew(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
-        //采用阶梯递增模式，起始并发为tps数，每2秒递增1次
         int threadNum = CommonUtil.getValue(0, tgConfig, ThreadGroupConfig::getThreadNum);
         if (threadNum <= 0) {
             if (context.getPodCount() == 0) {
@@ -1376,10 +1375,6 @@ public class ScriptModifier {
                 //thread = (tps/(1000ms / rt) / pod) + 1
                 threadNum = BigDecimal.valueOf(threadGroupTps / (1000.0 / threadGroupRt) / context.getPodCount())
                         .intValue() + 1;//加1 是为了防止threadNum为0
-//                threadNum = BigDecimal.valueOf(threadGroupTps)
-//                        .divide(BigDecimal.valueOf(1000).divide(BigDecimal.valueOf(threadGroupRt)))
-//                        .divide(BigDecimal.valueOf(context.getPodCount()))
-//                        .intValue();
             }
         }
         return threadNum;
