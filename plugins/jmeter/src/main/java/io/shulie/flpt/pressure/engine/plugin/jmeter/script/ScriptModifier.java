@@ -1307,7 +1307,7 @@ public class ScriptModifier {
         //将其下方内容清空
         threadGroupElement.clearContent();
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(tpsTargetLevel), rampUp, steps, holdTime);
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf((int) tpsTargetLevel), rampUp, steps, holdTime);
         //添加限制并发数 这里不需要限制
         //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
         DomUtils.addBasePropElement(threadGroupElement, "ConcurrencyLimit", Constants.TPS_MODE_CONCURRENCY_LIMIT);
