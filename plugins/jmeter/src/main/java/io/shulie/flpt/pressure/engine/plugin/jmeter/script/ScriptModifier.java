@@ -388,47 +388,95 @@ public class ScriptModifier {
         return false;
     }
 
+    public static List<Element> getSamplerElements(Element e) {
+        List<Element> samplers = new ArrayList<>();
+        List<Element> elements = DomUtils.findAllChildElement(e);
+        for (Element element : elements) {
+            NodeTypeEnum type = NodeTypeEnum.value(element.getName());
+            //非线程组节点不处理
+            if (NodeTypeEnum.SAMPLER != type) {
+                samplers.addAll(getSamplerElements(element));
+            } else {
+                samplers.add(element);
+            }
+        }
+        return samplers;
+    }
+
     /**
      * 添加常量吞吐量控制器
      */
-    public static boolean addConstantsThroughputControlNew(Element threadGroupElement,  List<Element> elements, PressureContext context, double factor) {
+    public static boolean addConstantsThroughputControlNew(Element threadGroupElement, List<Element> elements, PressureContext context, double factor) {
         if (CollectionUtils.isEmpty(elements)) {
             return false;
         }
-        for (Element e : elements) {
-            if (null == e) {
-                continue;
-            }
-            NodeTypeEnum type = NodeTypeEnum.value(e.getName());
-            //非线程组节点不处理
-            if (NodeTypeEnum.SAMPLER != type) {
-                boolean flag = addConstantsThroughputControlNew(threadGroupElement, DomUtils.elements(e), context, factor);
-                if (flag) {
-                    return flag;
-                }
-                continue;
-            }
-            String transaction = DomUtils.getTransaction(e);
-            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
-            double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
-            if (null != context.getPodCount() && context.getPodCount() > 0) {
-                podTps = podTps / context.getPodCount();
-            }
-            //当前业务活动tps占比
-            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
-            //求1分钟的并发数,
-            double throughput = podTps * 60;
-            //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
-            if (factor > 5) {
-                throughput += factor;
-            } else {
-                throughput *= (1 + factor);
-            }
-            //在线程组最后的位置添加常数吞吐量定时器
-            addEachConstantsThroughputControl(threadGroupElement, throughput, percent, factor);
-            return true;
+
+        //获取线程组下采样器
+        double tcThroughput =0f;
+        //获取比例
+        double percent = 1.0;
+        List<Element> children = DomUtils.findAllChildElement(threadGroupElement);
+        if (CollectionUtils.isNotEmpty(children)) {
+            tcThroughput = children.stream().filter(Objects::nonNull)
+                    .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
+                    .map(e->{
+                        String transaction = DomUtils.getTransaction(e);
+                        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+                        double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+                        if (null != context.getPodCount() && context.getPodCount() > 0) {
+                            podTps = podTps / context.getPodCount();
+                        }
+                        //求1分钟的并发数,
+                        double throughput = podTps * 60;
+                        //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+                        if (factor > 5) {
+                            throughput += factor;
+                        } else {
+                            throughput *= (1 + factor);
+                        }
+                        return throughput;
+                    })
+                    .mapToDouble(d->d)
+                    .sum();
         }
-        return false;
+
+        //添加常量吞吐量定时器
+        addEachConstantsThroughputControl(threadGroupElement, tcThroughput, percent, factor);
+
+//        for (Element e : elements) {
+//            if (null == e) {
+//                continue;
+//            }
+//            NodeTypeEnum type = NodeTypeEnum.value(e.getName());
+//            //非线程组节点不处理
+//            if (NodeTypeEnum.SAMPLER != type) {
+//                boolean flag = addConstantsThroughputControlNew(threadGroupElement, DomUtils.elements(e), context, factor);
+//                if (flag) {
+//                    return flag;
+//                }
+//                continue;
+//            }
+//            String transaction = DomUtils.getTransaction(e);
+//            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+//            double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+//            if (null != context.getPodCount() && context.getPodCount() > 0) {
+//                podTps = podTps / context.getPodCount();
+//            }
+//            //当前业务活动tps占比
+//            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
+//            //求1分钟的并发数,
+//            double throughput = podTps * 60;
+//            //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+//            if (factor > 5) {
+//                throughput += factor;
+//            } else {
+//                throughput *= (1 + factor);
+//            }
+//            //在线程组最后的位置添加常数吞吐量定时器
+//            addEachConstantsThroughputControl(threadGroupElement, throughput, percent, factor);
+//            return true;
+//        }
+        return true;
     }
 
     /**
@@ -1323,7 +1371,7 @@ public class ScriptModifier {
         //将其下方内容清空
         threadGroupElement.clearContent();
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf((int)tpsTargetLevel), rampUp, steps, holdTime);
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf((int) tpsTargetLevel), rampUp, steps, holdTime);
         //添加限制并发数 这里不需要限制
         //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
         DomUtils.addBasePropElement(threadGroupElement, "ConcurrencyLimit", Constants.TPS_MODE_CONCURRENCY_LIMIT);

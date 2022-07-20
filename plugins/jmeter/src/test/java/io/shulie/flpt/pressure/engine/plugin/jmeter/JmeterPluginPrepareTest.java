@@ -41,21 +41,21 @@ public class JmeterPluginPrepareTest {
             "\t\t\t\"bindRef\": \"e9e3864368fad5af14c371791ac66f97\",\n" +
             "\t\t\t\"rate\": 0.31,\n" +
             "\t\t\t\"rt\": 5,\n" +
-            "\t\t\t\"tps\": 500\n" +
+            "\t\t\t\"tps\": 30\n" +
             "\t\t},\n" +
             "\t\t\"14b83f6218c31f3c17d2573698d468fb\": {\n" +
             "\t\t\t\"activityName\": \"/test-manager/pub/hello\",\n" +
             "\t\t\t\"bindRef\": \"14b83f6218c31f3c17d2573698d468fb\",\n" +
             "\t\t\t\"rate\": 0.06,\n" +
             "\t\t\t\"rt\": 5,\n" +
-            "\t\t\t\"tps\": 100\n" +
+            "\t\t\t\"tps\": 50\n" +
             "\t\t},\n" +
             "\t\t\"a7592be62cd2feb259126dceeeba634c\": {\n" +
             "\t\t\t\"activityName\": \"/ptcs/test/get\",\n" +
             "\t\t\t\"bindRef\": \"a7592be62cd2feb259126dceeeba634c\",\n" +
             "\t\t\t\"rate\": 0.63,\n" +
             "\t\t\t\"rt\": 5,\n" +
-            "\t\t\t\"tps\": 1000\n" +
+            "\t\t\t\"tps\": 100\n" +
             "\t\t}\n" +
             "\t},\n" +
             "\t\"callbackUrl\": \"http://10.207.23.32:10010/takin-cloud/api/engine/callback\",\n" +
@@ -64,7 +64,7 @@ public class JmeterPluginPrepareTest {
             "\t\"customerId\": 2,\n" +
             "\t\"enginePluginsFiles\": [],\n" +
             "\t\"memSetting\": \"-Xmx2048m -Xms2048m -Xss256K -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m\",\n" +
-            "\t\"podCount\": 3,\n" +
+            "\t\"podCount\": 1,\n" +
             "\t\"pressureConfig\": {\n" +
             "\t\t\"engineRedisAddress\": \"Mk789B4i-1.cachesit.sfcloud.local:8080,Mk789B4i-2.cachesit.sfcloud.local:8080,Mk789B4i-3.cachesit.sfcloud.local:8080,Mk789B4i-4.cachesit.sfcloud.local:8080,Mk789B4i-5.cachesit.sfcloud.local:8080,Mk789B4i-6.cachesit.sfcloud.local:8080\",\n" +
             "\t\t\"engineRedisPassword\": \"PTbmfUDn9vy4dBVuY8h0Zzuh\",\n" +
