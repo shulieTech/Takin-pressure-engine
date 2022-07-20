@@ -248,11 +248,10 @@ public class ScriptModifier {
             return;
         }
         //常量吞吐量控制器
-        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
-        /*
-            精准吞吐量定时器
-            addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
-         */
+//        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
+        addConstantsThroughputControlNew(threadGroupElement, elements, context, tpsTargetLevelFactor);
+//        //精准吞吐量定时器
+//        addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
     }
 
     public static boolean addPreciseThroughputTimer(List<Element> elements, PressureContext context, double factor, int threadNum) {
@@ -384,6 +383,49 @@ public class ScriptModifier {
             }
             //给第一个采样器添加常量吞吐量控制器
             addEachConstantsThroughputControl(e, throughput, percent, factor);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 添加常量吞吐量控制器
+     */
+    public static boolean addConstantsThroughputControlNew(Element threadGroupElement,  List<Element> elements, PressureContext context, double factor) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return false;
+        }
+        for (Element e : elements) {
+            if (null == e) {
+                continue;
+            }
+            NodeTypeEnum type = NodeTypeEnum.value(e.getName());
+            //非线程组节点不处理
+            if (NodeTypeEnum.SAMPLER != type) {
+                boolean flag = addConstantsThroughputControlNew(threadGroupElement, DomUtils.elements(e), context, factor);
+                if (flag) {
+                    return flag;
+                }
+                continue;
+            }
+            String transaction = DomUtils.getTransaction(e);
+            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+            double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+            if (null != context.getPodCount() && context.getPodCount() > 0) {
+                podTps = podTps / context.getPodCount();
+            }
+            //当前业务活动tps占比
+            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
+            //求1分钟的并发数,
+            double throughput = podTps * 60;
+            //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+            if (factor > 5) {
+                throughput += factor;
+            } else {
+                throughput *= (1 + factor);
+            }
+            //在线程组最后的位置添加常数吞吐量定时器
+            addEachConstantsThroughputControl(threadGroupElement, throughput, percent, factor);
             return true;
         }
         return false;
@@ -1247,6 +1289,9 @@ public class ScriptModifier {
         else {
             int threadNum = getThreadNumNew(threadGroupElement, context, config, tgConfig);
             modifyDefaultTps0ThreadGroup(threadGroupElement, context, config, tgConfig, threadNum);
+            //添加常数吞吐量控制器
+            addThroughputControl(threadGroupElement, context);
+            //添加常数吞吐量定时器
             addConstantsThroughputControl(threadGroupElement, context, config, threadNum);
         }
     }
