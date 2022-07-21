@@ -1496,7 +1496,7 @@ public class ScriptModifier {
             steps = (int) Math.ceil(threadNum / tpsTargetLevel) + 1;
             rampUp = (int) Math.floor(steps * 1.2) + 1;
             if (steps > 1 && rampUp < 11) {//jmeter 每5s上报一次数据
-                rampUp = 16;
+                rampUp = 11;
             }
         }
 
