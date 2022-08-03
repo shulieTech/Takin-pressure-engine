@@ -248,11 +248,10 @@ public class ScriptModifier {
             return;
         }
         //常量吞吐量控制器
-        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
-        /*
-            精准吞吐量定时器
-            addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
-         */
+//        addConstantsThroughputControl(elements, context, tpsTargetLevelFactor);
+        addConstantsThroughputControlNew(threadGroupElement, elements, context, tpsTargetLevelFactor);
+//        //精准吞吐量定时器
+//        addPreciseThroughputTimer(elements, context, tpsTargetLevelFactor, threadNum);
     }
 
     public static boolean addPreciseThroughputTimer(List<Element> elements, PressureContext context, double factor, int threadNum) {
@@ -387,6 +386,97 @@ public class ScriptModifier {
             return true;
         }
         return false;
+    }
+
+    public static List<Element> getSamplerElements(Element e) {
+        List<Element> samplers = new ArrayList<>();
+        List<Element> elements = DomUtils.findAllChildElement(e);
+        for (Element element : elements) {
+            NodeTypeEnum type = NodeTypeEnum.value(element.getName());
+            //非线程组节点不处理
+            if (NodeTypeEnum.SAMPLER != type) {
+                samplers.addAll(getSamplerElements(element));
+            } else {
+                samplers.add(element);
+            }
+        }
+        return samplers;
+    }
+
+    /**
+     * 添加常量吞吐量控制器
+     */
+    public static boolean addConstantsThroughputControlNew(Element threadGroupElement, List<Element> elements, PressureContext context, double factor) {
+        if (CollectionUtils.isEmpty(elements)) {
+            return false;
+        }
+
+        //获取线程组下采样器
+        double tcThroughput =0f;
+        //获取比例
+        double percent = 1.0;
+        List<Element> children = DomUtils.findAllChildElement(threadGroupElement);
+        if (CollectionUtils.isNotEmpty(children)) {
+            tcThroughput = children.stream().filter(Objects::nonNull)
+                    .filter(n -> NodeTypeEnum.SAMPLER.equals(n.getName()))
+                    .map(e->{
+                        String transaction = DomUtils.getTransaction(e);
+                        BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+                        double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+                        if (null != context.getPodCount() && context.getPodCount() > 0) {
+                            podTps = podTps / context.getPodCount();
+                        }
+                        //求1分钟的并发数,
+                        double throughput = podTps * 60;
+                        //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+                        if (factor > 5) {
+                            throughput += factor;
+                        } else {
+                            throughput *= (1 + factor);
+                        }
+                        return throughput;
+                    })
+                    .mapToDouble(d->d)
+                    .sum();
+        }
+
+        //添加常量吞吐量定时器
+        addEachConstantsThroughputControl(threadGroupElement, tcThroughput, percent, factor);
+
+//        for (Element e : elements) {
+//            if (null == e) {
+//                continue;
+//            }
+//            NodeTypeEnum type = NodeTypeEnum.value(e.getName());
+//            //非线程组节点不处理
+//            if (NodeTypeEnum.SAMPLER != type) {
+//                boolean flag = addConstantsThroughputControlNew(threadGroupElement, DomUtils.elements(e), context, factor);
+//                if (flag) {
+//                    return flag;
+//                }
+//                continue;
+//            }
+//            String transaction = DomUtils.getTransaction(e);
+//            BusinessActivityConfig bsm = CommonUtil.getFromMap(context.getBusinessMap(), transaction);
+//            double podTps = CommonUtil.getValue(0, bsm, BusinessActivityConfig::getTps);
+//            if (null != context.getPodCount() && context.getPodCount() > 0) {
+//                podTps = podTps / context.getPodCount();
+//            }
+//            //当前业务活动tps占比
+//            double percent = CommonUtil.getValue(1d, bsm, BusinessActivityConfig::getRate);
+//            //求1分钟的并发数,
+//            double throughput = podTps * 60;
+//            //如果大于则表示上浮5个tps，如果小于则表示上浮百分比，0.1是原来的目标的基础上加10%
+//            if (factor > 5) {
+//                throughput += factor;
+//            } else {
+//                throughput *= (1 + factor);
+//            }
+//            //在线程组最后的位置添加常数吞吐量定时器
+//            addEachConstantsThroughputControl(threadGroupElement, throughput, percent, factor);
+//            return true;
+//        }
+        return true;
     }
 
     /**
@@ -1247,6 +1337,9 @@ public class ScriptModifier {
         else {
             int threadNum = getThreadNumNew(threadGroupElement, context, config, tgConfig);
             modifyDefaultTps0ThreadGroup(threadGroupElement, context, config, tgConfig, threadNum);
+            //添加常数吞吐量控制器
+            addThroughputControl(threadGroupElement, context);
+            //添加常数吞吐量定时器
             addConstantsThroughputControl(threadGroupElement, context, config, threadNum);
         }
     }
@@ -1278,7 +1371,7 @@ public class ScriptModifier {
         //将其下方内容清空
         threadGroupElement.clearContent();
         //重填内容
-        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf(tpsTargetLevel), rampUp, steps, holdTime);
+        rebuildCommonThreadGroupSubElements(threadGroupElement, StringUtils.valueOf((int) tpsTargetLevel), rampUp, steps, holdTime);
         //添加限制并发数 这里不需要限制
         //TPS模式下并发限制500 如果不限制可能并发会很高 导致系统资源不足
         DomUtils.addBasePropElement(threadGroupElement, "ConcurrencyLimit", Constants.TPS_MODE_CONCURRENCY_LIMIT);
@@ -1336,7 +1429,6 @@ public class ScriptModifier {
      * @return
      */
     private static int getThreadNumNew(Element threadGroupElement, PressureContext context, EnginePressureConfig config, ThreadGroupConfig tgConfig) {
-        //采用阶梯递增模式，起始并发为tps数，每2秒递增1次
         int threadNum = CommonUtil.getValue(0, tgConfig, ThreadGroupConfig::getThreadNum);
         if (threadNum <= 0) {
             if (context.getPodCount() == 0) {
@@ -1374,12 +1466,8 @@ public class ScriptModifier {
                 }
                 //通过Rt、tps 计算并发数
                 //thread = (tps/(1000ms / rt) / pod) + 1
-                threadNum = BigDecimal.valueOf(threadGroupTps / (1000l / threadGroupRt) / context.getPodCount())
+                threadNum = BigDecimal.valueOf(threadGroupTps / (1000.0 / threadGroupRt) / context.getPodCount())
                         .intValue() + 1;//加1 是为了防止threadNum为0
-//                threadNum = BigDecimal.valueOf(threadGroupTps)
-//                        .divide(BigDecimal.valueOf(1000).divide(BigDecimal.valueOf(threadGroupRt)))
-//                        .divide(BigDecimal.valueOf(context.getPodCount()))
-//                        .intValue();
             }
         }
         return threadNum;
@@ -1407,6 +1495,9 @@ public class ScriptModifier {
         if (tpsTargetLevel > 0) {
             steps = (int) Math.ceil(threadNum / tpsTargetLevel) + 1;
             rampUp = (int) Math.floor(steps * 1.2) + 1;
+            if (steps > 1 && rampUp < 11) {//jmeter 每5s上报一次数据
+                rampUp = 11;
+            }
         }
 
         threadGroupElement.setName(JmeterConstants.TPS_NEW_THREAD_GROUP_NAME);
