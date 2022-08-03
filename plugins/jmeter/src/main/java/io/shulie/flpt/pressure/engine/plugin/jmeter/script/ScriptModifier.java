@@ -1235,6 +1235,16 @@ public class ScriptModifier {
             if (type != NodeTypeEnum.THREAD_GROUP) {
                 continue;
             }
+            Attribute testClass = hashTreeSubElement.attribute("testclass");
+            if(Objects.nonNull(testClass)){
+                String className = testClass.getValue();
+                //setup线程组与teardown线程组 不做改变
+                for (String suffix : NodeTypeEnum.NOT_CONTROL_THREAD_GROUP.getSuffixes()) {
+                    if(suffix.equals(className)){
+                        continue;
+                    }
+                }
+            }
 
             switch (context.getPressureScene()) {
                 case TRY_RUN:

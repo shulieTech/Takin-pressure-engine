@@ -26,6 +26,11 @@ public enum NodeTypeEnum {
      * 取样器
      */
     SAMPLER("SamplerProxy", "Sampler", "Sample"),
+
+    /**
+     * 不控制的线程组
+     */
+    NOT_CONTROL_THREAD_GROUP("SetupThreadGroup", "PostThreadGroup"),
     ;
 
     @Getter
