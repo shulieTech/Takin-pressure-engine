@@ -18,6 +18,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import com.google.gson.JsonObject;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.ExceptionUtil;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -205,7 +206,12 @@ public class JmeterPlugin implements PressurePlugin {
         Long customerId = context.getCustomerId();
 
         // 解析jmx
-        String jmxFileContent = FileUtils.readTextFileContent(context.getScriptFile());
+        File scriptFile = context.getScriptFile();
+        //解密脚本文件
+        String privateKey = System.getProperty("privateKey");
+
+        String jmxFileContent = FileUtils.readTextFileContent(scriptFile);
+        jmxFileContent = RsaUtils.decryptScriptContent(jmxFileContent, privateKey);
         // 处理特殊字符
         jmxFileContent = JmeterPluginUtil.specialCharRepBefore(jmxFileContent);
         SAXReader reader = new SAXReader();
