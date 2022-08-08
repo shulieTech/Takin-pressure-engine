@@ -7,9 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.io.ByteArrayInputStream;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,7 +15,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import com.google.gson.JsonObject;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.ExceptionUtil;
-import io.shulie.flpt.pressure.engine.plugin.jmeter.util.RsaUtils;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.FileEncoder;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -207,11 +204,8 @@ public class JmeterPlugin implements PressurePlugin {
 
         // 解析jmx
         File scriptFile = context.getScriptFile();
-        //解密脚本文件
-        String privateKey = System.getProperty("privateKey");
-
-        String jmxFileContent = FileUtils.readTextFileContent(scriptFile);
-        jmxFileContent = RsaUtils.decryptScriptContent(jmxFileContent, privateKey);
+        //解密并读取脚本文件
+        String jmxFileContent = FileEncoder.decode(scriptFile, context.getPrivateKeyMap());
         // 处理特殊字符
         jmxFileContent = JmeterPluginUtil.specialCharRepBefore(jmxFileContent);
         SAXReader reader = new SAXReader();

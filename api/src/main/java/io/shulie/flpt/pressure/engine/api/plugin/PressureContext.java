@@ -159,4 +159,9 @@ public class PressureContext extends AbstractEntry {
      * 请求头参数
      */
     private HttpHeaderVariables httpHeaderVariables;
+
+    /**
+     * 秘钥和版本的键值对
+     */
+    private Map<Integer,String> privateKeyMap;
 }

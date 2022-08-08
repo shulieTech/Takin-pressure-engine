@@ -92,4 +92,9 @@ public class EngineRunConfig extends AbstractEntry {
      */
     private String memSetting;
 
+    /**
+     * 秘钥和版本的键值对
+     */
+    private Map<Integer,String> privateKeyMap;
+
 }

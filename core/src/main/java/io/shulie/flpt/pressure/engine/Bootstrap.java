@@ -437,6 +437,8 @@ public class Bootstrap {
         //csv position
         context.setCsvPositionUrl(config.getCsvPositionUrl());
 
+        context.setPrivateKeyMap(config.getPrivateKeyMap());
+
         //初始化全局参数
         // 组装GlobalUserVariables
         GlobalUserVariables globalUserVariables = new GlobalUserVariables();
