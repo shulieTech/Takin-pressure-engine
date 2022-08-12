@@ -43,5 +43,12 @@ log ' >>> 打包压测引擎 <<< '
 cd "$PRESSURE_ENGINE_SOURCE_PATH" || exit
 mvn clean package -q -D"maven.test.skip"=true
 log 制品位于:"$PRESSURE_ENGINE_SOURCE_PATH"/build/target/pressure-engine.tar.gz
+
+log ' >>> 清理历史文件 <<< '
+cd "$JMETER_SOURCE_PATH" || exit
+rm -rf jmeter.zip
+cd "$PRESSURE_ENGINE_JMETER" || exit
+rm -rf bin lib config
 log ' >>> finish ^ . ^ bye ! <<< '
+
 

@@ -46,6 +46,7 @@ echo ' >>> 开始构建打包环境 <<< '
 rm    -rf   "$BUILD_DIR"
 mkdir       "$BUILD_DIR"
 cp          "$WORK_DIR"/build/target/pressure-engine.tar.gz "$BUILD_DIR"
+rm -rf      "$WORK_DIR"/build/target/pressure-engine.tar.gz
 tar   -zxf  "$BUILD_DIR"/pressure-engine.tar.gz -C "$BUILD_DIR"/
 echo " >>> 预生成DockerFile <<<"
 # 创建临时目录
