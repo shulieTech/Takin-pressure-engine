@@ -10,17 +10,16 @@ import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import com.google.gson.JsonObject;
-import io.shulie.flpt.pressure.engine.plugin.jmeter.util.ExceptionUtil;
-import io.shulie.flpt.pressure.engine.plugin.jmeter.util.FileEncoder;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
+import com.google.gson.JsonObject;
+import cn.hutool.core.collection.CollUtil;
 import com.google.gson.internal.LinkedTreeMap;
 
 import io.shulie.flpt.pressure.engine.util.*;
@@ -30,7 +29,9 @@ import io.shulie.flpt.pressure.engine.api.plugin.PressureContext;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.DomUtils;
 import io.shulie.flpt.pressure.engine.api.entity.EnginePtlLogConfig;
 import io.shulie.flpt.pressure.engine.entity.cloud.EngineStatusEnum;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.FileEncoder;
 import io.shulie.flpt.pressure.engine.api.entity.EnginePressureConfig;
+import io.shulie.flpt.pressure.engine.plugin.jmeter.util.ExceptionUtil;
 import io.shulie.flpt.pressure.engine.api.plugin.response.StopResponse;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.script.ScriptModifier;
 import io.shulie.flpt.pressure.engine.plugin.jmeter.util.JmeterPluginUtil;
@@ -45,27 +46,6 @@ import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities
  */
 @Slf4j
 public class JmeterPlugin implements PressurePlugin {
-
-    /**
-     * 调度默认延时时间 单位秒
-     */
-    private static final int SCHEDULED_INITIAL_DELAY = 5;
-
-    /**
-     * 调度默认周期时间 单位秒
-     */
-    private static final int SCHEDULED_PERIOD = 1;
-
-    /**
-     * 调度默认核心线程数 单位秒
-     */
-    private static final int SCHEDULED_THREAD_CORE_SIZE = 1;
-
-    /**
-     * 线程名格式化格式
-     */
-    private static final String THREAD_NAME_FORMAT = "thread-call-runner-%d";
-
     private String finalJmxFilePathName;
     private Process jmeterProcess;
 
@@ -152,15 +132,13 @@ public class JmeterPlugin implements PressurePlugin {
     public StopResponse stopPressureTest(PressureContext context) {
         //  sh  /home/opt/flpt/pressure-engine/engines/jmeter/bin/shutdown.sh
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
-        StringBuilder cmd = new StringBuilder();
-        cmd.append(binDir).append("/shutdown.sh");
         AtomicReference<String> msg = new AtomicReference<>("");
         int exitValue = ProcessUtils.stop(
-                cmd.toString(), binDir, 10L, null,
-                message -> {
-                    log.info(message);
-                    msg.set(message);
-                }
+            binDir + "/shutdown.sh", binDir, 10L, null,
+            message -> {
+                log.info(message);
+                msg.set(message);
+            }
         );
         log.info("Jmeter interrupt finished, exit value: {}", exitValue);
         return StopResponse.build(exitValue, msg.get());
@@ -196,7 +174,7 @@ public class JmeterPlugin implements PressurePlugin {
      */
     @Override
     public boolean doModifyScript(PressureContext context
-            , SupportedPressureModeAbilities supportedPressureModeAbilities) {
+        , SupportedPressureModeAbilities supportedPressureModeAbilities) {
         //  获取数据 组装header
         String sceneId = context.getSceneId();
         Long reportId = context.getReportId();
@@ -205,7 +183,7 @@ public class JmeterPlugin implements PressurePlugin {
         // 解析jmx
         File scriptFile = context.getScriptFile();
         //解密并读取脚本文件
-        String jmxFileContent = FileEncoder.decode(scriptFile, context.getPrivateKeyMap());
+        String jmxFileContent = FileEncoder.decode(scriptFile.getAbsolutePath(), context.getPrivateKeyMap());
         // 处理特殊字符
         jmxFileContent = JmeterPluginUtil.specialCharRepBefore(jmxFileContent);
         SAXReader reader = new SAXReader();
@@ -259,11 +237,11 @@ public class JmeterPlugin implements PressurePlugin {
         //将上传的额外文件复制到resourceDir  处理压测上传接口
         String finalJmxFolder = context.getResourcesDir() + File.separator + "final" + File.separator;
         List<String> attachmentsFiles = context.getAttachmentsFiles();
-        if(CollectionUtils.isNotEmpty(attachmentsFiles)){
+        if (CollUtil.isNotEmpty(attachmentsFiles)) {
             try {
                 for (String attachmentsFile : attachmentsFiles) {
                     File extraFile = new File(attachmentsFile);
-                    if(extraFile.isFile() && extraFile.exists()){
+                    if (extraFile.isFile() && extraFile.exists()) {
                         FileUtils.copyFileToDirectory(extraFile, finalJmxFolder);
                     }
                 }
@@ -275,7 +253,7 @@ public class JmeterPlugin implements PressurePlugin {
         try {
             log.info("final jmx file content:" + finalStr);
             String saveFinalJmxPath = context.getLogDir() + File.separator + "test-" + (StringUtils.isNotBlank(
-                    context.getPodNumber()) ? "-" + context.getPodNumber() : System.currentTimeMillis()) + ".jmx";
+                context.getPodNumber()) ? "-" + context.getPodNumber() : System.currentTimeMillis()) + ".jmx";
             FileUtils.writeTextFile(finalStr, saveFinalJmxPath);
         } catch (Exception e) {
             log.error("组装的jmx文件写入共享目录失败", e);
@@ -287,11 +265,11 @@ public class JmeterPlugin implements PressurePlugin {
     public void doPressureTest(PressureContext context) {
         // 参数执行 日志目录指定 jmeter占用端口指定
         String jmeterLogFilePath = context.getLogDir() + File.separator + "jmeter-" + System.currentTimeMillis()
-                + ".log";
+            + ".log";
         String portRule = "-Jbeanshell.server.port=" + JmeterPluginUtil.availablePortAcquire(10200);
         //打印jtl日志
         String ptlPath = context.getPtlDir() + File.separator + "pressure-" + (StringUtils.isNotBlank(context.getPodNumber())
-                ? context.getPodNumber() : System.currentTimeMillis()) + ".jtl";
+            ? context.getPodNumber() : System.currentTimeMillis()) + ".jtl";
         //id三兄弟
         String sceneId = context.getSceneId() + "";
         String reportId = context.getReportId() + "";
@@ -302,21 +280,21 @@ public class JmeterPlugin implements PressurePlugin {
         Integer traceSampling = context.getTraceSampling();
 
         log.info(" >>>>> 当前场景ID为[{}], 任务ID[{}], 采样率为[{}]", sceneId, reportId, traceSampling);
-        String[] args = new String[]{
-                "-D\"user.timezone\"=Asia/Shanghai",
-                "-D\"java.net.preferIPv4Stack\"=true",
-                "-D\"java.net.preferIPv4Addresses\"=true",
-                "-D\"engine.pressure.mode\"=" + context.getPressureScene().getCode(),
-                "-D\"pod.number\"=" + podNum,
-                "-D\"SceneId\"=" + sceneId,
-                "-D\"ReportId\"=" + reportId,
-                "-D\"CustomerId\"=" + customerId,
-                "-D\"CallbackUrl\"=" + context.getCloudCallbackUrl(),
-                "-D\"dynamicTaskTpsUrl\"=" + context.getDynamicTaskTpsUrl(),
-                "-D\"csvPositionUrl\"=" + context.getCsvPositionUrl(),
-                "-D\"SamplingInterval\"=" + traceSampling};
-        String[] jmeterParam = new String[]{"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
-                , "-j", jmeterLogFilePath, portRule};
+        String[] args = new String[] {
+            "-D\"user.timezone\"=Asia/Shanghai",
+            "-D\"java.net.preferIPv4Stack\"=true",
+            "-D\"java.net.preferIPv4Addresses\"=true",
+            "-D\"engine.pressure.mode\"=" + context.getPressureScene().getCode(),
+            "-D\"pod.number\"=" + podNum,
+            "-D\"SceneId\"=" + sceneId,
+            "-D\"ReportId\"=" + reportId,
+            "-D\"CustomerId\"=" + customerId,
+            "-D\"CallbackUrl\"=" + context.getCloudCallbackUrl(),
+            "-D\"dynamicTaskTpsUrl\"=" + context.getDynamicTaskTpsUrl(),
+            "-D\"csvPositionUrl\"=" + context.getCsvPositionUrl(),
+            "-D\"SamplingInterval\"=" + traceSampling};
+        String[] jmeterParam = new String[] {"-n", "-t", finalJmxFilePathName, " -l " + ptlPath
+            , "-j", jmeterLogFilePath, portRule};
         //组装后端监听器参数
         args = metricArgsProcess(context, args);
         String startMode = context.getStartMode();
@@ -389,22 +367,22 @@ public class JmeterPlugin implements PressurePlugin {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("JmeterPlugin#startNewJmeterProcess",e);
             }
         } while (true);
         int exitValue = ProcessUtils.run(
-                cmd.toString(), binDir, timeout,
-                process -> jmeterProcess = process,
-                log::info
+            cmd.toString(), binDir, timeout,
+            process -> jmeterProcess = process,
+            log::info
         );
         //TODO 这里如果exitValue不为0，有可能是timeout超时了，
         // 但是由于是非正常关闭，jmeter逻辑没有通知takin-cloud结束通知，所以这里需要通知一下takin-cloud结束了
         // mark by 李鹏
         log.info("Jmeter run finished, exit value: {}", exitValue);
         //通知完成
-        if(exitValue == 0){
+        if (exitValue == 0) {
             HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.INTERRUPT_SUCCEED);
-        }else {
+        } else {
             HttpNotifyTakinCloudUtils.notifyTakinCloud(EngineStatusEnum.INTERRUPT_FAILED, "Jmeter非正常关闭,请检查启动参数");
         }
         TryUtils.retry(() -> {
@@ -421,6 +399,7 @@ public class JmeterPlugin implements PressurePlugin {
             TimeUnit.MILLISECONDS.sleep(timeMillis);
         } catch (Exception e) {
             log.warn(e.getMessage(), e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -450,11 +429,11 @@ public class JmeterPlugin implements PressurePlugin {
                 Object obj = csvConfig.get("startEndPositions");
                 String fileName = csvConfig.get("name").toString();
                 if (obj != null) {
-                    Map<Integer, Object> pairMap = (Map<Integer, Object>) obj;
+                    Map<Integer, Object> pairMap = (Map<Integer, Object>)obj;
                     Object o = pairMap.get(podIndex - 1);
                     log.info("获取到文件读取位置信息：{}", o.toString());
                     if (o instanceof JSONArray) {
-                        JSONArray jsonArray = (JSONArray) o;
+                        JSONArray jsonArray = (JSONArray)o;
                         if (!jsonArray.isEmpty()) {
                             JSONObject position = jsonArray.getJSONObject(0);
                             variablesJson.put(fileName, position.toJSONString());
@@ -462,8 +441,8 @@ public class JmeterPlugin implements PressurePlugin {
                     }
                     //兼容之前的分片数据
                     else if (o instanceof Map) {
-                        LinkedTreeMap<String, String> positionMap = (LinkedTreeMap<String, String>) o;
-                        variablesJson.put(fileName, JSONObject.toJSONString(positionMap));
+                        LinkedTreeMap<String, String> positionMap = (LinkedTreeMap<String, String>)o;
+                        variablesJson.put(fileName, JSON.toJSONString(positionMap));
                     }
                 }
             }
