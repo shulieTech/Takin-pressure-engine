@@ -97,6 +97,7 @@ public class JmeterPlugin implements PressurePlugin {
         //设置上传队列大小
         argsList.add("-D\"logQueueSize\"=" + pressureConfig.getLogQueueSize());
         argsList.add("-D\"zkServers\"=" + pressureConfig.getZkServers());
+        argsList.add("-D\"zkPath\"=" + pressureConfig.getZkPath());
         argsList.add("-D\"engineRedisAddress\"=" + pressureConfig.getEngineRedisAddress());
         argsList.add("-D\"engineRedisPort\"=" + pressureConfig.getEngineRedisPort());
         argsList.add("-D\"engineRedisSentinelNodes\"=" + pressureConfig.getEngineRedisSentinelNodes());

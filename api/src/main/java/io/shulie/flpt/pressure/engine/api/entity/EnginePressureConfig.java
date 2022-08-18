@@ -56,6 +56,10 @@ public class EnginePressureConfig extends AbstractEntry {
      */
     private String zkServers;
     /**
+     * zk - Path
+     */
+    private String zkPath;
+    /**
      * 日志队列大小
      */
     private Integer logQueueSize;
