@@ -444,7 +444,7 @@ public class ScriptModifier {
         constantThroughputTimer.addAttribute("testname", getSampleThroughputControllerTestname(testName));
         constantThroughputTimer.addAttribute("enabled", "true");
 
-        DomUtils.addBasePropElement(constantThroughputTimer, "calcMode", 4);
+        DomUtils.addBasePropElement(constantThroughputTimer, "calcMode", 2);
         DomUtils.addBasePropElement(constantThroughputTimer, "throughput", throughput);
         if (null != throughputPercent) {
             DomUtils.addBasePropElement(constantThroughputTimer, "percent", throughputPercent);
