@@ -1,8 +1,10 @@
-FROM geekidea/alpine-a:3.9
+FROM alpine:latest
 MAINTAINER shulie <dev@shulie.io>
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories && \
     apk update && \
-    apk add openjdk8 && \
+    apk add openjdk8 busybox busybox-extras && \
+    apk add bash nfs-utils && \
     apk add --no-cache curl && \
     apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
