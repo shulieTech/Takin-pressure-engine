@@ -343,10 +343,6 @@ public class JmeterPlugin implements PressurePlugin {
 
     private void startNewJmeterProcess(PressureContext context, boolean jmeterDebug, String[] args) {
         Integer duration = context.getDuration();
-        Long timeout = null;
-        if (null != duration) {
-            timeout = duration.longValue();
-        }
         String binDir = System.getProperty("jmeter.home") + File.separator + "bin";
         StringBuilder cmd = new StringBuilder();
         cmd.append("java");//jmeter
@@ -376,8 +372,9 @@ public class JmeterPlugin implements PressurePlugin {
         }));
         logger.info("cmd:");
         logger.info(cmd.toString());
+        // 引擎不控制JMeter的运行超时
         int exitValue = ProcessUtils.run(
-                cmd.toString(), binDir, timeout + 10,
+                cmd.toString(), binDir, -1L,
                 process -> jmeterProcess = process,
                 message -> logger.info(message)
         );
