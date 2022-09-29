@@ -26,13 +26,11 @@ IMAGE_TAG="latest"
 
 #自定义参数 （以下变量需要根据自己实际情况进行修改）
 #JMETER源码路径
-JMETER_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-jmeter
-#Gradle目录
-GRADLE_HOME=/Users/shulie/Documents/gradle-6.6
+JMETER_SOURCE_PATH=/Users/allen/tmp/renshou/rs_jmeter
 #Maven settings文件路径
-MAVEN_SETTINGS_PATH=/Users/shulie/.m2/settings.xml
+MAVEN_SETTINGS_PATH=/Users/allen/.m2/settings.xml
 #压测引擎项目源码根目录
-PRESSURE_ENGINE_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-pressure-engine
+PRESSURE_ENGINE_SOURCE_PATH=/Users/allen/tmp/renshou/rs_pressure-engine
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"
@@ -67,8 +65,8 @@ sleep 2
 #清空jmeter日志
 echo "" > $JMETER_SOURCE_PATH/bin/jmeter.log
 cd $JMETER_SOURCE_PATH
-$GRADLE_HOME/bin/gradle src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test
-$GRADLE_HOME/bin/gradle src:dist:createDist
+./gradlew src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test
+./gradlew src:dist:createDist -PskipCheckstyle -PchecksumIgnore
 
 #jmeter 打zip
 log ' >>> 压缩jmeter.. <<< '
