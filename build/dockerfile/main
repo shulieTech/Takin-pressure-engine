@@ -2,6 +2,5 @@ MAINTAINER shulie <dev@shulie.io>
 COPY pressure-engine /home/opt/flpt/pressure-engine
 ENV engineType="jmeter"
 ENV confPath="/etc/engine/config/engine.conf"
-USER 801:801
 EXPOSE 8087
 ENTRYPOINT ["sh", "/home/opt/flpt/pressure-engine/bin/start_async.sh"]
