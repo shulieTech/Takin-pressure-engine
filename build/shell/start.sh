@@ -15,7 +15,8 @@ ENGINE_TYPE=""
 START_MODE="double" # double single
 
 POD_NUM="" #TODO 从环境变量中取POD序号
-POD_NUM=${POD_NUMBER}
+#POD_NUM=${POD_NUMBER}
+POD_NUM=`cat /tmp/podNum.txt`
 
 DEBUG=0
 FOREGROUND=0
