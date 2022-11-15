@@ -60,6 +60,10 @@ public class EnginePressureConfig extends AbstractEntry {
      */
     private String zkPath;
     /**
+     * kafka链接服务
+     */
+    private String serviceConfig
+    /**
      * 日志队列大小
      */
     private Integer logQueueSize;
