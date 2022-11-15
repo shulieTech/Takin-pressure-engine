@@ -26,13 +26,17 @@ IMAGE_TAG="latest"
 
 #自定义参数 （以下变量需要根据自己实际情况进行修改）
 #JMETER源码路径
-JMETER_SOURCE_PATH=/Users/allen/tmp/renshou/rs_jmeter
+#JMETER_SOURCE_PATH=~/develop/workspaces/gitWorkspaces/Takin-jmeter
+JMETER_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-jmeter
+#Gradle目录
+#GRADLE_HOME=~/.gradle/wrapper/dists/gradle-6.6-bin/dflktxzwamd4bv66q00iv4ga9/gradle-6.6
+GRADLE_HOME=/Users/shulie/Documents/gradle-6.6
 #Maven settings文件路径
-MAVEN_SETTINGS_PATH=~/.m2/settings.xml
+#MAVEN_SETTINGS_PATH=~/develop/.m2/settings.xml
+MAVEN_SETTINGS_PATH=/Users/shulie/.m2/settings.xml
 #压测引擎项目源码根目录
-PRESSURE_ENGINE_SOURCE_PATH=/Users/allen/tmp/renshou/rs_pressure-engine
-# 最终制品目录
-BUILD_IMAGE_PATH=$PRESSURE_ENGINE_SOURCE_PATH/build/target/result
+#PRESSURE_ENGINE_SOURCE_PATH=~/develop/workspaces/gitWorkspaces/Takin-pressure-engine
+PRESSURE_ENGINE_SOURCE_PATH=/Users/shulie/Documents/project/github/Takin-pressure-engine
 
 log() {
     echo -e "\033[40;37m $1 \033[0m"
@@ -60,20 +64,15 @@ if [ ! -d "${PRESSURE_ENGINE_SOURCE_PATH}" ];then
     echo "PRESSURE_ENGINE_SOURCE_PATH IS NOT EXISTS"
     exit 1;
 fi
-if [ ! -d "${BUILD_IMAGE_PATH}" ];then
-    echo "BUILD_IMAGE_PATH IS NOT EXISTS"
-    exit 1;
-fi
-
 
 #使用gradle给jmeter编译
 log ' >>> building jmeter.. <<< '
 sleep 2
 #清空jmeter日志
 echo "" > $JMETER_SOURCE_PATH/bin/jmeter.log
-cd $JMETER_SOURCE_PATH || exit
-./gradlew src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test
-./gradlew src:dist:createDist -PskipCheckstyle -PchecksumIgnore
+cd $JMETER_SOURCE_PATH
+$GRADLE_HOME/bin/gradle src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test
+$GRADLE_HOME/bin/gradle src:dist:createDist
 
 #jmeter 打zip
 log ' >>> 压缩jmeter.. <<< '
@@ -90,18 +89,20 @@ if [ ! -d "$PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib" ]; th
 fi
 mv jmeter.zip $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib
 #解压并删除无效文件
-cd $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib || exit
+cd $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib
 unzip jmeter.zip
 log ' >>> 移除多余文件.. <<< '
-cd Takin-jmeter || exit
+sleep 2
+cd Takin-jmeter
 #删除无效文件
-rm -rf $(ls -a | grep -e -v '(bin|config|lib)')
+rm -rf `ls | egrep -v '(bin|config|lib)'`
 rm -rf .*
 
 #打包上传
 log ' >>> 打包，上传.. <<< '
 sleep 2
-cd $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter || exit
+cd $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter
+#mvn clean deploy -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
 mvn clean install -Dmaven.test.skip=true --settings $MAVEN_SETTINGS_PATH
 #打包上传后移除jmeter
 rm -rf $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib/*
@@ -109,14 +110,14 @@ rm -rf $PRESSURE_ENGINE_SOURCE_PATH/jmeter/pressure-engine-jmeter/lib/*
 #将pressure-engine项目打包
 log ' >>> 打包pressure-engine.. <<< '
 sleep 2
-cd $PRESSURE_ENGINE_SOURCE_PATH || exit
+cd $PRESSURE_ENGINE_SOURCE_PATH
 mvn clean package -Dmaven.test.skip=true -X --settings $MAVEN_SETTINGS_PATH
 
 #将打包后的pressure-engine拷贝到打docker镜像处
 log ' >>> 构建docker镜像.. <<< '
 sleep 2
-cd ~ || exit
-
+cd ~
+BUILD_IMAGE_PATH=`pwd`/develop/buildImages
 #校验构建目录是否存在，不存在则创建
 if [ ! -d "${BUILD_IMAGE_PATH}" ];then
     mkdir -p $BUILD_IMAGE_PATH
@@ -127,7 +128,7 @@ fi
 if [ ! -d "${BUILD_IMAGE_PATH}/pressure-engine" ];then
     mkdir -p $BUILD_IMAGE_PATH/pressure-engine
 fi
-cd $BUILD_IMAGE_PATH/pressure-engine || exit
+cd $BUILD_IMAGE_PATH/pressure-engine
 #将Dockerfile复制过来
 cp -f $PRESSURE_ENGINE_SOURCE_PATH/Dockerfile .
 #将打包好的压测引擎包移动到这里
@@ -139,12 +140,13 @@ tar -zxvf pressure-engine.tar.gz
 rm -rf pressure-engine.tar.gz
 #docker构建
 docker build --platform linux/amd64 -t forcecop/pressure-engine:$IMAGE_TAG .
-#导出镜像
-log ' >>> 开始导出镜像.. <<< '
-#sleep 2
-cd $BUILD_IMAGE_PATH/images || exit
-#将打好的镜像导出到images目录
-docker save -o pressure-engine-$IMAGE_TAG.tar forcecop/pressure-engine:$IMAGE_TAG
 
-log " >>> 镜像pressure-engine-${IMAGE_TAG}.tar已经导出到${BUILD_IMAGE_PATH}/images, 请查看 <<< "
+#导出镜像
+#log ' >>> 开始导出镜像.. <<< '
+#sleep 2
+#cd $BUILD_IMAGE_PATH/images
+#将打好的镜像导出到images目录
+#docker save -o pressure-engine-$IMAGE_TAG.tar forcecop/pressure-engine:$IMAGE_TAG
+
+#log " >>> 镜像pressure-engine-${IMAGE_TAG}.tar已经导出到${BUILD_IMAGE_PATH}/images, 请查看 <<< "
 log ' >>> finish ^ . ^ bye ! <<< '
