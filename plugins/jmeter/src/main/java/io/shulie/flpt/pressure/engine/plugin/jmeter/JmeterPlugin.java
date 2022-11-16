@@ -98,7 +98,7 @@ public class JmeterPlugin implements PressurePlugin {
         argsList.add("-D\"logQueueSize\"=" + pressureConfig.getLogQueueSize());
         argsList.add("-D\"zkServers\"=" + pressureConfig.getZkServers());
         argsList.add("-D\"zkPath\"=" + pressureConfig.getZkPath());
-        argsList.add("-D\"serviceConfig\"=" + pressureConfig.getServiceConfig());
+        argsList.add("-D\"kafka.sdk.bootstrap\"=" + pressureConfig.getServiceConfig());
         argsList.add("-D\"engineRedisAddress\"=" + pressureConfig.getEngineRedisAddress());
         argsList.add("-D\"engineRedisPort\"=" + pressureConfig.getEngineRedisPort());
         argsList.add("-D\"engineRedisSentinelNodes\"=" + pressureConfig.getEngineRedisSentinelNodes());

@@ -62,7 +62,7 @@ public class EnginePressureConfig extends AbstractEntry {
     /**
      * kafka链接服务
      */
-    private String serviceConfig
+    private String serviceConfig;
     /**
      * 日志队列大小
      */
