@@ -436,7 +436,7 @@ public class JmeterPlugin implements PressurePlugin {
                     if (o instanceof JSONArray) {
                         JSONArray jsonArray = (JSONArray)o;
                         if (!jsonArray.isEmpty()) {
-                            JSONObject position = jsonArray.getJSONObject(0);
+                            JSONObject position = jsonArray.getJSONObject(podIndex - 1);
                             variablesJson.put(fileName, position.toJSONString());
                         }
                     }
