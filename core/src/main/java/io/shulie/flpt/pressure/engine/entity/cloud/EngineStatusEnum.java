@@ -26,9 +26,15 @@ public enum EngineStatusEnum {
      */
     INTERRUPT_SUCCEED("中断成功", "interruptSuccess"),
     /**
+     * 开始压测
+     */
+    PRESSURE("开始压测","pressure"),
+    /**
      * 中断失败
      */
     INTERRUPT_FAILED("中断失败", "interruptFail");
+
+
 
     private final String message;
     private final String status;

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import org.dom4j.Document;
@@ -300,6 +301,23 @@ public class JmeterPlugin implements PressurePlugin {
         //组装后端监听器参数
         args = metricArgsProcess(context, args);
         String startMode = context.getStartMode();
+
+        // 挂载等待 pod 全部启动
+        do {
+            String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.PRESSURE);
+            log.info("获取压测状态：{}", result);
+            JsonObject jsonObject = GsonUtils.json2Obj(result, JsonObject.class);
+            if (jsonObject != null && jsonObject.get("data").getAsBoolean()) {
+                log.info("启动压测了.....");
+                break;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.error("JmeterPlugin#startNewJmeterProcess",e);
+            }
+        } while (true);
+
         if ("single".equalsIgnoreCase(startMode)) {
             startInCurrentProcess(context, args, jmeterParam);
         } else {
