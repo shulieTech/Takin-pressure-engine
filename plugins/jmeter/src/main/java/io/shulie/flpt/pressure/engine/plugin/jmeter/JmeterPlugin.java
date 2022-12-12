@@ -16,6 +16,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
 import com.google.gson.JsonObject;
@@ -99,6 +100,10 @@ public class JmeterPlugin implements PressurePlugin {
         argsList.add("-D\"zkServers\"=" + pressureConfig.getZkServers());
         argsList.add("-D\"zkPath\"=" + pressureConfig.getZkPath());
         argsList.add("-D\"kafka.sdk.bootstrap\"=" + pressureConfig.getServiceConfig());
+        argsList.add("-D\"kafka.auth.flag\"=" + pressureConfig.getKafkaAuthFlag());
+        argsList.add("-D\"security.protocol\"=" + pressureConfig.getSecurityProtocol());
+        argsList.add("-D\"sasl.mechanism\"=" + pressureConfig.getSaslMechanism());
+        argsList.add("-D\"sasl.jaas.config\"=" + StringEscapeUtils.escapeJava(pressureConfig.getSaslJaasConfig()));
         argsList.add("-D\"engineRedisAddress\"=" + pressureConfig.getEngineRedisAddress());
         argsList.add("-D\"engineRedisPort\"=" + pressureConfig.getEngineRedisPort());
         argsList.add("-D\"engineRedisSentinelNodes\"=" + pressureConfig.getEngineRedisSentinelNodes());
