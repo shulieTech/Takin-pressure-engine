@@ -1,11 +1,9 @@
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
 import java.io.File;
-import java.util.Map;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -95,6 +93,8 @@ public class JmeterPlugin implements PressurePlugin {
                 argsList.add("-D\"ptl.logCutOff\"=" + ptlLogConfig.getLogCutOff());
             }
         }
+        Base64.Encoder encoder = Base64.getEncoder();
+        String encodeToString = encoder.encodeToString(pressureConfig.getSaslJaasConfig().getBytes(StandardCharsets.UTF_8));
         //设置上传队列大小
         argsList.add("-D\"logQueueSize\"=" + pressureConfig.getLogQueueSize());
         argsList.add("-D\"zkServers\"=" + pressureConfig.getZkServers());
@@ -103,7 +103,7 @@ public class JmeterPlugin implements PressurePlugin {
         argsList.add("-D\"kafka.auth.flag\"=" + pressureConfig.getKafkaAuthFlag());
         argsList.add("-D\"security.protocol\"=" + pressureConfig.getSecurityProtocol());
         argsList.add("-D\"sasl.mechanism\"=" + pressureConfig.getSaslMechanism());
-        argsList.add("-D\"sasl.jaas.config\"=" + pressureConfig.getSaslJaasConfig().replaceAll(" ","##"));
+        argsList.add("-D\"sasl.jaas.config\"=" + encodeToString);
         argsList.add("-D\"engineRedisAddress\"=" + pressureConfig.getEngineRedisAddress());
         argsList.add("-D\"engineRedisPort\"=" + pressureConfig.getEngineRedisPort());
         argsList.add("-D\"engineRedisSentinelNodes\"=" + pressureConfig.getEngineRedisSentinelNodes());
