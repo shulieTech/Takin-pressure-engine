@@ -103,7 +103,7 @@ public class JmeterPlugin implements PressurePlugin {
         argsList.add("-D\"kafka.auth.flag\"=" + pressureConfig.getKafkaAuthFlag());
         argsList.add("-D\"security.protocol\"=" + pressureConfig.getSecurityProtocol());
         argsList.add("-D\"sasl.mechanism\"=" + pressureConfig.getSaslMechanism());
-        argsList.add("-D\"sasl.jaas.config\"=" + encodeToString);
+        argsList.add("-D\"sasl.jaas.config.base64\"=" + encodeToString);
         argsList.add("-D\"engineRedisAddress\"=" + pressureConfig.getEngineRedisAddress());
         argsList.add("-D\"engineRedisPort\"=" + pressureConfig.getEngineRedisPort());
         argsList.add("-D\"engineRedisSentinelNodes\"=" + pressureConfig.getEngineRedisSentinelNodes());
