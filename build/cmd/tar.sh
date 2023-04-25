@@ -32,6 +32,8 @@ cd "$JMETER_SOURCE_PATH" || exit
 ./gradlew src:build -PskipCheckstyle -PchecksumIgnore -Prat -PskipSpotless -x test -q
 ./gradlew src:dist:createDist -q
 
+log ' >>> 拷贝第三方jar包 <<< '
+cp /data/press-engine/ext_lib/* lib/
 log ' >>> 压缩、移动、解压 JMeter <<< '
 zip -q -r jmeter.zip bin lib config
 sh "$PRESSURE_ENGINE_JMETER"/clean.sh
