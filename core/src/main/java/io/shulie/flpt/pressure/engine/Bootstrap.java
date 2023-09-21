@@ -357,14 +357,10 @@ public class Bootstrap {
         context.setCustomerId(customerId);
         context.setMemSetting(config.getMemSetting());
         context.setMetricCollectorUrl(metricCollectorUrl);
-        context.setLogDir(config.getScriptFileDir());
-        if (StringUtils.isBlank(context.getLogDir())) {
-            context.setLogDir(StringUtils.formatStr(Constants.PRESSURE_LOG_DIR));
-        }
 
         String taskDir = StringUtils.formatStr(Constants.PRESSURE_TASK_DIR);
         //压测引擎log路径
-        String logDir = config.getScriptFileDir();
+        String logDir = StringUtils.isNotBlank(config.getPtlLogDir()) ? config.getPtlLogDir() : config.getScriptFileDir();
         if (StringUtils.isBlank(logDir)) {
             logDir = StringUtils.formatStr(Constants.PRESSURE_LOG_DIR);
         }

@@ -43,6 +43,8 @@ public class EngineRunConfig extends AbstractEntry {
      * 脚本文件所在目录
      */
     private String scriptFileDir;
+    // 日志文件所在目录
+    private String ptlLogDir;
     /**
      * 是否是在本地启动
      */
