@@ -5,7 +5,7 @@ IMAGE_TAG=""
 # 基础镜像md5
 BASIC_VERSION=""
 # 基础镜像名称
-BASIC_DOCKER_NAME="pressure-engine/basic"
+BASIC_DOCKER_NAME="192.168.1.226/library/basic"
 
 # 工作目录
 DIR_NAME=$(dirname "$0")
