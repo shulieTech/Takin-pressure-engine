@@ -208,6 +208,12 @@ public class JmeterPlugin implements PressurePlugin {
         String jmxFileContent = FileUtils.readTextFileContent(context.getScriptFile());
         // 处理特殊字符
         jmxFileContent = JmeterPluginUtil.specialCharRepBefore(jmxFileContent);
+        //处理CSVReader函数
+        String origScriptFileDir = context.getOrigScriptFileDir();
+        if(!org.apache.commons.lang3.StringUtils.endsWith(origScriptFileDir,"/")) {
+            origScriptFileDir = origScriptFileDir + File.separator;
+        }
+        jmxFileContent= org.apache.commons.lang3.StringUtils.replace(jmxFileContent, "${__CSVRead(", "${__CSVRead("+origScriptFileDir);
         SAXReader reader = new SAXReader();
         Document document = null;
         try {
@@ -470,5 +476,4 @@ public class JmeterPlugin implements PressurePlugin {
             context.getGlobalUserVariables().setGlobalVariablesMap(variablesJson.toJSONString());
         }
     }
-
 }

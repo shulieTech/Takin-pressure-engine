@@ -357,6 +357,7 @@ public class Bootstrap {
         context.setCustomerId(customerId);
         context.setMemSetting(config.getMemSetting());
         context.setMetricCollectorUrl(metricCollectorUrl);
+        context.setOrigScriptFileDir(config.getScriptFileDir());
 
         String taskDir = StringUtils.formatStr(Constants.PRESSURE_TASK_DIR);
         //压测引擎log路径

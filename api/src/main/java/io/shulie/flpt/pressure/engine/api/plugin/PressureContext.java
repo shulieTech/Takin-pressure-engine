@@ -29,6 +29,11 @@ public class PressureContext extends AbstractEntry {
      * 客户id
      */
     private Long customerId;
+
+    /**
+     * 原脚本文件路径：/etc/engine/script/scriptfile/503
+     */
+    private String origScriptFileDir;
     /**
      * 脚本路径
      */
