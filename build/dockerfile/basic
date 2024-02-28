@@ -1,4 +1,4 @@
-FROM geekidea/alpine-a:3.9
+FROM swr.cn-east-3.myhuaweicloud.com/shulie-hangzhou/geekidea-alpine-a:3.9
 MAINTAINER shulie <dev@shulie.io>
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
     apk update && \
