@@ -5,7 +5,7 @@ VERSION=""
 # 平台
 PLATFORM=""
 # 镜像名称
-DOCKER_NAME="pressure-engine/basic"
+DOCKER_NAME="swr.cn-east-3.myhuaweicloud.com/shulie-hangzhou/pressure-engine-basic"
 # 工作目录
 DIR_NAME=$(dirname "$0")
 BUILD_DIR=$(cd "${DIR_NAME}/.." || exit; pwd)
