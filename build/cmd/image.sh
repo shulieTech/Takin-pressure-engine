@@ -55,7 +55,6 @@ echo "临时文件${TEMP_FILE}"
 # 写入FROM
 echo "FROM ${BASIC_DOCKER_NAME}:${BASIC_VERSION}" > "${TEMP_FILE}"
 cat "${WORK_DIR}/build/dockerfile/main" >> "${TEMP_FILE}"
-cat "ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2" >> "${TEMP_FILE}"
 cat "${TEMP_FILE}"
 echo ' >>> 构建docker镜像 <<< '
 docker build \
