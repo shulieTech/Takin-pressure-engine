@@ -26,6 +26,8 @@ public enum NodeTypeEnum {
      * 取样器
      */
     SAMPLER("SamplerProxy", "Sampler", "Sample"),
+
+    KAKFK("io.shulie.jmeter.plugins.kafka.dataset.DataSet"),
     ;
 
     @Getter
