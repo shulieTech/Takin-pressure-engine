@@ -234,6 +234,10 @@ public class JmeterPluginPrepareTest {
         httpHeaderVariables.setPradarUserdata(reportId + "");
         //header需要透传rpcId  目前为0
         httpHeaderVariables.setPradarRpcId("0");
+        httpHeaderVariables.setPradarDebug("0");
+        if(pressureScene != null && (pressureScene == PressureSceneEnum.TRY_RUN.getCode() || pressureScene == PressureSceneEnum.FLOW_DEBUG.getCode())) {
+            httpHeaderVariables.setPradarDebug("1");
+        }
         context.setHttpHeaderVariables(httpHeaderVariables);
         //后端监听器对列长度
         String pressureEngineBackendQueueCapacity = pressureConfig.getPressureEngineBackendQueueCapacity();

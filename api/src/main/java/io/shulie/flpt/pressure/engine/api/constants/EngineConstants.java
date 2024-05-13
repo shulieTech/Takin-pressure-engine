@@ -64,4 +64,8 @@ public interface EngineConstants {
      * Http请求头参数 - rpcId
      */
     String HTTP_HEADER_PARAM_KEY_RPC_ID = "p-pradar-rpcid";
+    /**
+     * Http请求头参数 - debug
+     */
+    String HTTP_HEADER_PARAM_KEY_DEBUG = "p-pradar-debug";
 }

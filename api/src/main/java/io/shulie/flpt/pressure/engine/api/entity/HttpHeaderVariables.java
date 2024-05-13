@@ -23,4 +23,7 @@ public class HttpHeaderVariables {
 
     @HttpHeaderParamKey(EngineConstants.HTTP_HEADER_PARAM_KEY_RPC_ID)
     private String pradarRpcId;
+
+    @HttpHeaderParamKey(EngineConstants.HTTP_HEADER_PARAM_KEY_DEBUG)
+    private String pradarDebug;
 }
