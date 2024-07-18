@@ -5,7 +5,7 @@ IMAGE_TAG=""
 # 基础镜像md5
 BASIC_VERSION=""
 # 基础镜像名称
-BASIC_DOCKER_NAME="192.168.1.226/library/basic"
+BASIC_DOCKER_NAME="swr.cn-east-3.myhuaweicloud.com/shulie-hangzhou/pressure-engine-basic"
 
 # 工作目录
 DIR_NAME=$(dirname "$0")
@@ -46,7 +46,6 @@ echo ' >>> 开始构建打包环境 <<< '
 rm    -rf   "$BUILD_DIR"
 mkdir       "$BUILD_DIR"
 cp          "$WORK_DIR"/build/target/pressure-engine.tar.gz "$BUILD_DIR"
-rm -rf      "$WORK_DIR"/build/target/pressure-engine.tar.gz
 tar   -zxf  "$BUILD_DIR"/pressure-engine.tar.gz -C "$BUILD_DIR"/
 echo " >>> 预生成DockerFile <<<"
 # 创建临时目录
