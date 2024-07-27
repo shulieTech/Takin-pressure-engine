@@ -1,19 +1,13 @@
 package io.shulie.flpt.pressure.engine.plugin.jmeter.script;
 
 import com.alibaba.fastjson.JSON;
-import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
-import org.dom4j.*;
-
-import java.util.*;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.lang.reflect.Field;
-import java.util.stream.Collectors;
-
-import com.google.common.collect.Maps;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
-import io.shulie.flpt.pressure.engine.api.ability.model.*;
+import io.shulie.flpt.pressure.engine.api.ability.model.FlowDebugAbility;
+import io.shulie.flpt.pressure.engine.api.ability.model.InspectionAbility;
+import io.shulie.flpt.pressure.engine.api.ability.model.TryRunAbility;
+import io.shulie.flpt.pressure.engine.api.annotation.EngineException;
 import io.shulie.flpt.pressure.engine.api.annotation.GlobalParamKey;
 import io.shulie.flpt.pressure.engine.api.annotation.HttpHeaderParamKey;
 import io.shulie.flpt.pressure.engine.api.constants.EngineConstants;
@@ -33,8 +27,15 @@ import io.shulie.jmeter.tool.redis.RedisConfig;
 import io.shulie.jmeter.tool.redis.RedisUtil;
 import io.shulie.takin.constants.TakinRequestConstant;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.dom4j.*;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.shulie.flpt.pressure.engine.common.Constants.ENGINE_NFS_MOUNTED_PATH;
 
@@ -128,6 +129,8 @@ public class ScriptModifier {
             return false;
         }
         Element testPlanElement = testPlanElements.get(0);
+        //解析并处理edasCenterIp逻辑
+        setEdasIp(testPlanElement);
         // 将jar插件添加进去
         addJarFiles(testPlanElement, jarFilePathList);
 
@@ -2181,6 +2184,28 @@ public class ScriptModifier {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private static void setEdasIp(Element testPlanElement) {
+        List<Element> allElementProp = new ArrayList<>();
+        selectElement("elementProp", testPlanElement.elements(), allElementProp);
+        for (Element elementProp : allElementProp) {
+            Attribute nameAttr = elementProp.attribute("name");
+            if (null == nameAttr) {
+                continue;
+            }
+            String nameAttrValue = nameAttr.getValue();
+            if (!"edas.config.center.ip".equals(nameAttrValue)) {
+                continue;
+            }
+            Element nameElement = selectElementByEleNameAndAttr("stringProp", "name", "Argument.name",
+                    elementProp.elements());
+            Element valueElement = selectElementByEleNameAndAttr("stringProp", "name", "Argument.value",
+                    elementProp.elements());
+            if (nameElement != null && valueElement != null && "edas.config.center.ip".equals(nameElement.getText()) && valueElement.getStringValue() != null) {
+                System.setProperty("edas.config.center.ip", valueElement.getStringValue());
             }
         }
     }
