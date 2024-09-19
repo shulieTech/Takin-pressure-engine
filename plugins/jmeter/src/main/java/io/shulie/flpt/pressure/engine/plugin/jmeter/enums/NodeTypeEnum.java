@@ -17,7 +17,7 @@ public enum NodeTypeEnum {
     /**
      * 线程组
      */
-    THREAD_GROUP("ThreadGroup"),
+    THREAD_GROUP("ThreadGroup", "SetupThreadGroup", "PostThreadGroup"),
     /**
      * 逻辑控制器
      */
