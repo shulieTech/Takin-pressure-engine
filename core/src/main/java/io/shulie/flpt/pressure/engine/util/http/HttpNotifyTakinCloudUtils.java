@@ -44,10 +44,14 @@ public class HttpNotifyTakinCloudUtils {
 
     public static String getTakinCloud(EngineStatusEnum statusEnum) {
         String podNumber = System.getProperty("pod.number");
-        return HttpUtils.doPost(url,
+        String result = HttpUtils.doPost(url,
             GsonUtils.obj2Json(EngineNotifyParam.build(resourceId, reportId, customerId)
                 .podNum(podNumber == null ? "" : podNumber)
                 .status(statusEnum.getStatus()).build()));
+        if(result == null) {
+            log.warn("getTakinCloud接口返回结果为空url={}", url);
+        }
+        return result;
     }
 
     /**
