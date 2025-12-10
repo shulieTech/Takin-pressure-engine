@@ -1,5 +1,7 @@
 package io.shulie.flpt.pressure.engine.util.http;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.*;
 import java.util.Map;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
  *
  * @author 李鹏
  */
+@Slf4j
 public class HttpUtils {
 
     private static final Charset UTF_8 = StandardCharsets.UTF_8;
@@ -112,7 +115,8 @@ public class HttpUtils {
             Map<String, List<String>> headers = readHeaders(input);
             input = wrapperInput(headers, input);
             return toString(input);
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.error("http请求异常:host={}, port={}, url={}", host, port, url, e.getMessage());
             return null;
         } finally {
             closeQuietly(input);
