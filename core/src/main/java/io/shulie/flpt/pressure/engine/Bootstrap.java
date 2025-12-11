@@ -18,6 +18,7 @@ import io.shulie.flpt.pressure.engine.util.http.HttpNotifyTakinCloudUtils;
 import io.shulie.flpt.pressure.engine.api.ability.EnginePressureModeAbility;
 import io.shulie.flpt.pressure.engine.api.ability.SupportedPressureModeAbilities;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.BooleanUtils;
@@ -82,7 +83,7 @@ public class Bootstrap {
             isEmpty = StringUtils.isBlank(configurations) || (StringUtils.isNotBlank(configurations)
                 && JSON.parseObject(configurations).isEmpty());
             System.out.println(
-                String.format("Parsing the configuration file, The content of the current configuration file is %s",
+                    DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss") + String.format(" Parsing the configuration file, The content of the current configuration file is %s",
                     isEmpty ? "empty. The engine is waiting start. " : configurations));
             if (isEmpty) {
                 try {
