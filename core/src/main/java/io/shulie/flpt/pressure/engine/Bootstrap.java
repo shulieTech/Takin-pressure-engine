@@ -55,7 +55,7 @@ public class Bootstrap {
     /**
      * 调度默认周期时间 单位秒
      */
-    private static final int SCHEDULED_PERIOD = 1;
+    private static final int SCHEDULED_PERIOD = 3;
 
     /**
      * 调度默认核心线程数 单位秒

@@ -1,11 +1,8 @@
 package io.shulie.flpt.pressure.engine.plugin.jmeter;
 
 import java.io.File;
-import java.util.Map;
-import java.util.List;
+import java.util.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -386,17 +383,20 @@ public class JmeterPlugin implements PressurePlugin {
         //回调通知准备就绪
         HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.READIED);
         do {
+            try {
+                /**
+                 * 随机休眠2000ms到4000ms
+                 */
+                Thread.sleep(2000 + new Random().nextInt(2000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             String result = HttpNotifyTakinCloudUtils.getTakinCloud(EngineStatusEnum.PRESSURE);
             log.info("获取压测状态：{}", result);
             JsonObject jsonObject = GsonUtils.json2Obj(result, JsonObject.class);
             if (jsonObject != null && jsonObject.get("data").getAsBoolean()) {
                 log.info("启动压测");
                 break;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         } while (true);
         int exitValue = ProcessUtils.run(
