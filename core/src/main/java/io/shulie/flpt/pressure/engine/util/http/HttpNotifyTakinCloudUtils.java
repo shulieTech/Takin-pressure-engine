@@ -57,7 +57,7 @@ public class HttpNotifyTakinCloudUtils {
             params.put("taskId", reportId);
             params.put("customerId", customerId);
             params.put("status", statusEnum.getStatus());
-            params.put("podNumber", podNumber);
+            params.put("podNum", podNumber);
             log.warn("外部接口返回结果为空url={}, params={}", url, JSON.toJSONString(params));
         }
         return result;

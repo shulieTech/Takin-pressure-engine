@@ -116,7 +116,7 @@ public class HttpUtils {
             input = wrapperInput(headers, input);
             return toString(input);
         } catch (Exception e) {
-            log.error("http请求异常:host={}, port={}, url={}", host, port, url, e.getMessage());
+            log.error("http请求异常:host={}, port={}, url={}, error={}", host, port, url, e.getMessage());
             return null;
         } finally {
             closeQuietly(input);
